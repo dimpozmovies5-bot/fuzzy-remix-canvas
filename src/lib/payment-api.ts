@@ -1,4 +1,4 @@
-const API_BASE = "https://relworx-api.arthurdimpoz.workers.dev/api";
+const API_BASE = "https://function-bun-production-656d.up.railway.app/api";
 
 export async function requestPayment(msisdn: string, amount: number, description: string) {
   const res = await fetch(`${API_BASE}/deposit`, {
