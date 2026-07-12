@@ -19,7 +19,7 @@ export async function sendPayment(msisdn: string, amount: number, description: s
 }
 
 export async function checkRequestStatus(internalReference: string) {
-  const res = await fetch(`${API_BASE}/request-status?internal_reference=${internalReference}`);
+  const res = await fetch(`${API_BASE}/request-status?internal_reference=${encodeURIComponent(internalReference)}`);
   return res.json();
 }
 
