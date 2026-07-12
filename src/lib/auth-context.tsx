@@ -55,6 +55,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
+  // Disable right-click for everyone except admin users
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      if (!isAdmin) e.preventDefault();
+    };
+    document.addEventListener("contextmenu", handleContextMenu);
+    return () => document.removeEventListener("contextmenu", handleContextMenu);
+  }, [isAdmin]);
+
   return (
     <AuthContext.Provider value={{ user, loading, isAdmin }}>
       {children}
