@@ -57,11 +57,13 @@ export default function AgentBanner({ onUpgrade }: { onUpgrade?: () => void }) {
   }, [user, hasActiveSubscription, currentPlanId, subscription?.endDate]);
 
   useEffect(() => {
-    if (visible) {
-      const t = setTimeout(() => setVisible(false), 10000);
+    if (visible && mode) {
+      // Agent-of-the-week congrats disappears fast (5s); member upgrade nudge stays 10s
+      const duration = mode === "agent" ? 5000 : 10000;
+      const t = setTimeout(() => setVisible(false), duration);
       return () => clearTimeout(t);
     }
-  }, [visible]);
+  }, [visible, mode]);
 
   return (
     <>
@@ -134,7 +136,7 @@ export default function AgentBanner({ onUpgrade }: { onUpgrade?: () => void }) {
             <div className="relative mt-3 h-0.5 rounded-full bg-primary/10 overflow-hidden">
               <div
                 className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-primary/40"
-                style={{ animation: "agent-progress 10s linear forwards" }}
+                style={{ animation: `agent-progress ${mode === "agent" ? 5 : 10}s linear forwards` }}
               />
             </div>
           </div>
