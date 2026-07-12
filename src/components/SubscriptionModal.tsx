@@ -93,7 +93,14 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
         setStatusMsg("Payment prompt sent! Waiting for confirmation...");
         startPolling();
       } else {
-        setStatusMsg(result?.message || result?.relworx?.message || "Failed to initiate payment. Please try again.");
+        const detailMsg =
+          result?.details?.message ||
+          result?.message ||
+          result?.relworx?.message ||
+          result?.error ||
+          "Failed to initiate payment. Please try again.";
+        const code = result?.details?.error_code ? ` (${result.details.error_code})` : "";
+        setStatusMsg(`${detailMsg}${code}`);
         setStep("failed");
       }
     } catch (err: any) {
