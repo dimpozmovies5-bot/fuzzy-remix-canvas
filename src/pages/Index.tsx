@@ -45,6 +45,13 @@ const Index = () => {
           {activeFilter === "home" && (
             <div className="space-y-3">
               <HeroCarousel />
+              <a
+                href="tel:+256773566069"
+                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-sm font-semibold text-primary-foreground bg-gradient-to-r from-primary to-accent shadow-md hover:opacity-90 transition"
+              >
+                <span>📞</span>
+                <span>Contact Support: 0773566069</span>
+              </a>
               <CategoriesRow
                 onSelectCategory={setCategoryFilter}
                 activeCategory={categoryFilter}
