@@ -7,6 +7,16 @@ import { requestPayment, checkRequestStatus } from "@/lib/payment-api";
 import { database } from "@/lib/firebase";
 import { ref, set } from "firebase/database";
 
+function normalizeUgandanMsisdn(raw: string): string | null {
+  if (!raw) return null;
+  let d = raw.replace(/\D+/g, "");
+  if (d.startsWith("256")) d = d.slice(3);
+  while (d.startsWith("0")) d = d.slice(1);
+  if (d.length !== 9) return null;
+  if (!d.startsWith("7")) return null;
+  return `+256${d}`;
+}
+
 const PLAN_ICONS: Record<string, typeof Clock> = {
   "12hr": Clock,
   "3days": Zap,
@@ -45,8 +55,13 @@ export default function SubscribePage() {
   };
 
   const handlePay = async () => {
-    if (!selectedPlan || !user || phone.length < 10) return;
-    const msisdn = phone.startsWith("+") ? phone : phone.startsWith("0") ? `+256${phone.slice(1)}` : `+256${phone}`;
+    if (!selectedPlan || !user) return;
+    const msisdn = normalizeUgandanMsisdn(phone);
+    if (!msisdn) {
+      setStatusMsg("Invalid phone number. Use a Ugandan MTN/Airtel number, e.g. 0770123456.");
+      setStep("failed");
+      return;
+    }
     setStep("processing");
     setStatusMsg("Sending payment request...");
     try {
@@ -206,7 +221,7 @@ export default function SubscribePage() {
               </div>
               <button
                 onClick={handlePay}
-                disabled={phone.length < 10}
+                disabled={!normalizeUgandanMsisdn(phone)}
                 className="w-full py-3 bg-primary hover:opacity-90 disabled:opacity-40 rounded-xl text-primary-foreground text-sm font-bold transition shadow-md shadow-primary/30"
               >
                 Pay UGX {selectedPlan.price.toLocaleString()}
