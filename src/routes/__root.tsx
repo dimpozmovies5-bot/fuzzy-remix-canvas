@@ -85,6 +85,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "VJ Dimpoz Movies — Stream Movies, Series & Music" },
       { name: "twitter:description", content: "VJ Dimpoz Movies: stream translated movies, series, music, and animation with subscription plans." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bf6ad88e-9229-49a2-a88f-7c4a4354881f/id-preview-adc78628--59bcc067-73f9-4035-acb1-90f47292cefa.lovable.app-1784009065249.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bf6ad88e-9229-49a2-a88f-7c4a4354881f/id-preview-adc78628--59bcc067-73f9-4035-acb1-90f47292cefa.lovable.app-1784009065249.png" },
     ],
     links: [
       {
