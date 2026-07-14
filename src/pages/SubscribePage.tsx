@@ -221,7 +221,7 @@ export default function SubscribePage() {
               </div>
               <button
                 onClick={handlePay}
-                disabled={phone.length < 10}
+                disabled={!normalizeUgandanMsisdn(phone)}
                 className="w-full py-3 bg-primary hover:opacity-90 disabled:opacity-40 rounded-xl text-primary-foreground text-sm font-bold transition shadow-md shadow-primary/30"
               >
                 Pay UGX {selectedPlan.price.toLocaleString()}
