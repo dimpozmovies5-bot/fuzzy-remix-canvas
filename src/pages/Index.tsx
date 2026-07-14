@@ -9,6 +9,7 @@ import AuthModal from "@/components/AuthModal";
 import SubscriptionModal from "@/components/SubscriptionModal";
 import NewContentToast from "@/components/NewContentToast";
 import AgentBanner from "@/components/AgentBanner";
+import SubscriberStatusBanner from "@/components/SubscriberStatusBanner";
 import EasterBanner from "@/components/EasterBanner";
 import { useAuth } from "@/lib/auth-context";
 import { trackNavigation } from "@/lib/track-navigation";
@@ -52,6 +53,7 @@ const Index = () => {
                 <span>📞</span>
                 <span>Contact Support: 0773566069</span>
               </a>
+              <SubscriberStatusBanner onUpgrade={() => setShowSubscriptionModal(true)} />
               <CategoriesRow
                 onSelectCategory={setCategoryFilter}
                 activeCategory={categoryFilter}
