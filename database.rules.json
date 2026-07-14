@@ -294,6 +294,23 @@
     "analytics": {
       ".read": "auth != null && (auth.token.email === 'arthurdimpoz@gmail.com')",
       ".write": "auth != null"
+    },
+    "agent_profiles": {
+      ".read": "auth != null && (auth.token.email === 'arthurdimpoz@gmail.com')",
+      ".indexOn": ["planId", "submittedAt"],
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || auth.token.email === 'arthurdimpoz@gmail.com')",
+        ".write": "auth != null && (auth.uid === $uid || auth.token.email === 'arthurdimpoz@gmail.com')",
+        "userId": { ".validate": "newData.isString()" },
+        "email": { ".validate": "newData.isString()" },
+        "fullName": { ".validate": "newData.isString()" },
+        "businessName": { ".validate": "newData.isString()" },
+        "location": { ".validate": "newData.isString()" },
+        "telephone": { ".validate": "newData.isString()" },
+        "planId": { ".validate": "newData.isString()" },
+        "submittedAt": { ".validate": "newData.isString()" },
+        "updatedAt": { ".validate": "newData.isString()" }
+      }
     }
   }
 }
