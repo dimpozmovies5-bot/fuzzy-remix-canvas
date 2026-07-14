@@ -7,6 +7,16 @@ import { requestPayment, checkRequestStatus } from "@/lib/payment-api";
 import { database } from "@/lib/firebase";
 import { ref, set } from "firebase/database";
 
+function normalizeUgandanMsisdn(raw: string): string | null {
+  if (!raw) return null;
+  let d = raw.replace(/\D+/g, "");
+  if (d.startsWith("256")) d = d.slice(3);
+  while (d.startsWith("0")) d = d.slice(1);
+  if (d.length !== 9) return null;
+  if (!d.startsWith("7")) return null;
+  return `+256${d}`;
+}
+
 const PLAN_ICONS: Record<string, typeof Clock> = {
   "12hr": Clock,
   "3days": Zap,
