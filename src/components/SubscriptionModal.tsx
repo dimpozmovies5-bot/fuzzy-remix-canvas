@@ -14,18 +14,16 @@ import { requestPayment, checkRequestStatus, validatePhone } from "@/lib/payment
  */
 function normalizeUgandanMsisdn(raw: string): string | null {
   if (!raw) return null;
-  // keep digits only
   let d = raw.replace(/\D+/g, "");
-  // strip country code if present
-  if (d.startsWith("256")) d = d.slice(3);
-  // strip trunk zero
-  if (d.startsWith("0")) d = d.slice(1);
-  // some users type +256 0770... → after strip we could still have leading 0
-  while (d.startsWith("0")) d = d.slice(1);
-  // must be 9 digits, starting with 7 (Ugandan mobile)
-  if (d.length !== 9) return null;
-  if (!d.startsWith("7")) return null;
-  return `+256${d}`;
+  if (!d) return null;
+  // strip international "00" prefix
+  if (d.startsWith("00")) d = d.slice(2);
+  // Ugandan local formats (0XXXXXXXXX or 9-digit 7XXXXXXXX) → +256XXXXXXXXX
+  if (d.length === 10 && d.startsWith("0")) d = "256" + d.slice(1);
+  else if (d.length === 9 && (d.startsWith("7") || d.startsWith("3"))) d = "256" + d;
+  // Accept any international MSISDN between 8 and 15 digits (E.164)
+  if (d.length < 8 || d.length > 15) return null;
+  return `+${d}`;
 }
 import { database } from "@/lib/firebase";
 import { ref, set } from "firebase/database";

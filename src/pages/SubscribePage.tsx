@@ -10,11 +10,12 @@ import { ref, set } from "firebase/database";
 function normalizeUgandanMsisdn(raw: string): string | null {
   if (!raw) return null;
   let d = raw.replace(/\D+/g, "");
-  if (d.startsWith("256")) d = d.slice(3);
-  while (d.startsWith("0")) d = d.slice(1);
-  if (d.length !== 9) return null;
-  if (!d.startsWith("7")) return null;
-  return `+256${d}`;
+  if (!d) return null;
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.length === 10 && d.startsWith("0")) d = "256" + d.slice(1);
+  else if (d.length === 9 && (d.startsWith("7") || d.startsWith("3"))) d = "256" + d;
+  if (d.length < 8 || d.length > 15) return null;
+  return `+${d}`;
 }
 
 const PLAN_ICONS: Record<string, typeof Clock> = {
