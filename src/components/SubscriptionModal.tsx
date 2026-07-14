@@ -3,7 +3,30 @@ import { X, Check, Loader2, Phone, Crown, Zap, Star, Clock, Calendar } from "luc
 import { SUBSCRIPTION_PLANS, type SubscriptionPlan } from "@/lib/subscription-context";
 import { useSubscription } from "@/lib/subscription-context";
 import { useAuth } from "@/lib/auth-context";
-import { requestPayment, checkRequestStatus } from "@/lib/payment-api";
+import { requestPayment, checkRequestStatus, validatePhone } from "@/lib/payment-api";
+
+/**
+ * Normalize any Ugandan phone input to E.164 (+256XXXXXXXXX).
+ * Accepts: 0770123456, 770123456, 256770123456, +256770123456,
+ * with spaces, dashes, parentheses, or a leading "+256 0770...".
+ * Returns null when the input can't be reduced to a valid 9-digit
+ * subscriber number starting with 7 (MTN/Airtel mobile).
+ */
+function normalizeUgandanMsisdn(raw: string): string | null {
+  if (!raw) return null;
+  // keep digits only
+  let d = raw.replace(/\D+/g, "");
+  // strip country code if present
+  if (d.startsWith("256")) d = d.slice(3);
+  // strip trunk zero
+  if (d.startsWith("0")) d = d.slice(1);
+  // some users type +256 0770... → after strip we could still have leading 0
+  while (d.startsWith("0")) d = d.slice(1);
+  // must be 9 digits, starting with 7 (Ugandan mobile)
+  if (d.length !== 9) return null;
+  if (!d.startsWith("7")) return null;
+  return `+256${d}`;
+}
 import { database } from "@/lib/firebase";
 import { ref, set } from "firebase/database";
 
@@ -67,12 +90,30 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
   };
 
   const handlePay = async () => {
-    if (!selectedPlan || !user || phone.length < 10) return;
-    const msisdn = phone.startsWith("+") ? phone : phone.startsWith("0") ? `+256${phone.slice(1)}` : `+256${phone}`;
+    if (!selectedPlan || !user) return;
+    const msisdn = normalizeUgandanMsisdn(phone);
+    if (!msisdn) {
+      setStatusMsg("Invalid phone number. Use a Ugandan MTN/Airtel number, e.g. 0770123456.");
+      setStep("failed");
+      return;
+    }
     setStep("processing");
-    setStatusMsg("Sending payment request...");
+    setStatusMsg("Validating phone number...");
 
     try {
+      // Pre-validate to catch bad networks / unsupported numbers before charging
+      try {
+        const v = await validatePhone(msisdn);
+        const valid = v?.valid ?? v?.success ?? v?.is_valid;
+        if (valid === false) {
+          const msg = v?.message || v?.details?.message || "This phone number isn't supported for mobile money.";
+          setStatusMsg(msg);
+          setStep("failed");
+          return;
+        }
+      } catch { /* if validation endpoint hiccups, still try deposit */ }
+
+      setStatusMsg("Sending payment request...");
       const result = await requestPayment(msisdn, selectedPlan.price, `LUO CINEMA ${selectedPlan.name} Subscription`);
       const internalRef = result?.internal_reference || result?.relworx?.internal_reference;
       if (result?.success && internalRef) {
@@ -205,7 +246,7 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
                 </div>
                 <button
                   onClick={handlePay}
-                  disabled={phone.length < 10}
+                  disabled={!normalizeUgandanMsisdn(phone)}
                   className="w-full py-3 bg-primary hover:opacity-90 disabled:opacity-40 rounded-xl text-primary-foreground text-sm font-bold transition shadow-md shadow-primary/30"
                 >
                   Pay UGX {selectedPlan.price.toLocaleString()}
