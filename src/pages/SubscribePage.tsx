@@ -45,8 +45,13 @@ export default function SubscribePage() {
   };
 
   const handlePay = async () => {
-    if (!selectedPlan || !user || phone.length < 10) return;
-    const msisdn = phone.startsWith("+") ? phone : phone.startsWith("0") ? `+256${phone.slice(1)}` : `+256${phone}`;
+    if (!selectedPlan || !user) return;
+    const msisdn = normalizeUgandanMsisdn(phone);
+    if (!msisdn) {
+      setStatusMsg("Invalid phone number. Use a Ugandan MTN/Airtel number, e.g. 0770123456.");
+      setStep("failed");
+      return;
+    }
     setStep("processing");
     setStatusMsg("Sending payment request...");
     try {
