@@ -31,6 +31,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsAdmin(false);
       }
 
+      // Auto-clear stale browsing data for logged-in users so payment retries
+      // are not blocked by cached responses / stale sessionStorage state.
+      if (currentUser) {
+        try {
+          const flagKey = `browsingDataCleared_${currentUser.uid}`;
+          const lastCleared = localStorage.getItem(flagKey);
+          const now = Date.now();
+          // Clear once per session, and again every 30 minutes.
+          if (!lastCleared || now - Number(lastCleared) > 30 * 60 * 1000) {
+            // Wipe payment-related sessionStorage keys
+            try {
+              const keys = Object.keys(sessionStorage);
+              keys.forEach((k) => {
+                if (/pay|deposit|withdraw|txn|transaction|reference|msisdn|phone/i.test(k)) {
+                  sessionStorage.removeItem(k);
+                }
+              });
+            } catch {}
+
+            // Wipe payment-related localStorage keys (keep auth + prefs)
+            try {
+              const keys = Object.keys(localStorage);
+              keys.forEach((k) => {
+                if (/pay|deposit|withdraw|txn|transaction|reference|pendingPayment/i.test(k)) {
+                  localStorage.removeItem(k);
+                }
+              });
+            } catch {}
+
+            // Drop any cached fetch responses (Service Worker / PWA cache)
+            try {
+              if ("caches" in window) {
+                const names = await caches.keys();
+                await Promise.all(
+                  names.map(async (name) => {
+                    const cache = await caches.open(name);
+                    const reqs = await cache.keys();
+                    await Promise.all(
+                      reqs.map((req) =>
+                        /function-bun-production|\/api\/(deposit|withdraw|request-status|validate-phone|transactions|wallet)/i.test(
+                          req.url
+                        )
+                          ? cache.delete(req)
+                          : Promise.resolve(false)
+                      )
+                    );
+                  })
+                );
+              }
+            } catch {}
+
+            localStorage.setItem(flagKey, String(now));
+          }
+        } catch (e) {
+          console.warn("Auto browsing-data cleanup failed:", e);
+        }
+      }
+
+
+
       if (currentUser) {
         try {
           const userRef = dbRef(database, `users/${currentUser.uid}`);
