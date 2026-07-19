@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNavigate, Link } from "react-router-dom";
 import { database } from "@/lib/firebase";
-import { ref as dbRef, onValue } from "firebase/database";
+import { ref as dbRef, onValue, remove as dbRemove } from "firebase/database";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Sparkles, MapPin, Briefcase, Mail, User as UserIcon } from "lucide-react";
+import { ArrowLeft, Sparkles, MapPin, Briefcase, Mail, User as UserIcon, Trash2 } from "lucide-react";
 import AdminPasswordGate from "@/components/AdminPasswordGate";
 
 interface AgentProfile {
