@@ -120,6 +120,20 @@ export default function AdminAgentsPage() {
                       {new Date(a.submittedAt).toLocaleDateString()}
                     </span>
                   </div>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Delete agent profile for ${a.fullName || a.email}?`)) return;
+                      try {
+                        await dbRemove(dbRef(database, `agent_profiles/${a.userId}`));
+                      } catch (e) {
+                        alert("Failed to delete: " + (e as Error).message);
+                      }
+                    }}
+                    className="w-full mt-2 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold text-destructive-foreground bg-destructive/80 hover:bg-destructive transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete
+                  </button>
                 </Card>
               ))}
             </div>
