@@ -31,6 +31,7 @@ interface Movie {
   genre?: string;
   episodes?: Episode[];
   seasons?: number;
+  isCompleted?: boolean;
 }
 
 interface PopularGridProps {
