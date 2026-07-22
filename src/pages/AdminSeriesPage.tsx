@@ -35,6 +35,7 @@ const defaultForm = () => ({
   category: "Action", seasons: 1,
   episodes: [{ episodeNumber: 1, title: "", streamlink: "", season: 1 }] as Episode[],
   isRecentlyAdded: false,
+  isCompleted: false,
 });
 
 export default function AdminSeriesPage() {
