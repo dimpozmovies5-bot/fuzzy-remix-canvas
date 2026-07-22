@@ -25,6 +25,7 @@ interface Series {
   episodes: Episode[];
   seasons?: number;
   isRecentlyAdded?: boolean;
+  isCompleted?: boolean;
 }
 
 const CATEGORIES = ["Action", "Comedy", "Drama", "Horror", "Romance", "Sci-Fi", "Thriller", "Fantasy", "Western", "Documentary", "Nigerian", "Ugandan", "Bongo", "Ghanaian", "Animation", "Special"];
