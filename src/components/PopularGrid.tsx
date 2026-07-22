@@ -563,6 +563,11 @@ function ContentGrid({ items, onPosterClick, onSelectSeries, showDateBadge }: Co
                     </div>
                   );
                 })()}
+                {movie.type === "series" && movie.isCompleted && (
+                  <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-green-500 text-white text-[7px] md:text-[9px] font-bold rounded shadow-md uppercase tracking-wide">
+                    ✓ Completed
+                  </div>
+                )}
               </div>
             </div>
             <p className="mt-1 text-foreground text-[8px] md:text-[10px] font-medium text-center line-clamp-2 leading-tight w-full px-0.5">
