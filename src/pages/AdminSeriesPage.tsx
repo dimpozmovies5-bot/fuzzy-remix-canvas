@@ -159,7 +159,7 @@ export default function AdminSeriesPage() {
         title: newSeries.title, image: newSeries.image,
         rating: Number(newSeries.rating), year: newSeries.year,
         category: newSeries.category, seasons: newSeries.seasons,
-        episodes: newSeries.episodes, isRecentlyAdded: newSeries.isRecentlyAdded,
+        episodes: newSeries.episodes, isRecentlyAdded: newSeries.isRecentlyAdded, isCompleted: newSeries.isCompleted,
         ...(editingSeries ? { updatedAt: new Date().toISOString() } : { createdAt: new Date().toISOString() }),
       };
 
