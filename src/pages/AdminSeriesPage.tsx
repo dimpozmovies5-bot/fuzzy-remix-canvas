@@ -245,7 +245,18 @@ export default function AdminSeriesPage() {
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Number of Seasons</label>
                 <Input type="number" min="1" value={newSeries.seasons} onChange={(e) => handleSeasonsChange(parseInt(e.target.value) || 1)} className="bg-secondary border-border text-foreground" />
-              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-4 items-center">
+              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                <input type="checkbox" checked={newSeries.isCompleted} onChange={(e) => setNewSeries({ ...newSeries, isCompleted: e.target.checked })} className="w-4 h-4 accent-primary" />
+                Mark as Completed Series
+              </label>
+              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                <input type="checkbox" checked={newSeries.isRecentlyAdded} onChange={(e) => setNewSeries({ ...newSeries, isRecentlyAdded: e.target.checked })} className="w-4 h-4 accent-primary" />
+                Recently Added
+              </label>
+            </div>
             </div>
 
             {/* Season tabs */}
