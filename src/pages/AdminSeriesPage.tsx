@@ -374,6 +374,7 @@ export default function AdminSeriesPage() {
                     category: s.category, seasons: s.seasons || 1,
                     episodes: (s.episodes || []).map(ep => ({ ...ep, season: ep.season || 1 })),
                     isRecentlyAdded: s.isRecentlyAdded || false,
+                    isCompleted: s.isCompleted || false,
                   });
                   setActiveSeason(1);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
