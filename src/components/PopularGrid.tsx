@@ -559,13 +559,20 @@ function ContentGrid({ items, onPosterClick, onSelectSeries, showDateBadge }: Co
                   const latestSeason = movie.seasons || Math.max(...eps.map((e: Episode) => e.season || 1));
                   const latestSeasonEps = eps.filter((e: Episode) => (e.season || 1) === latestSeason).length;
                   return (
-                    <div className="absolute top-1 right-1 px-2 py-1 bg-primary/90 backdrop-blur-sm text-primary-foreground text-[9px] md:text-[10px] font-bold rounded-md shadow-lg border border-primary-foreground/20">
-                      S{latestSeason} · {latestSeasonEps}ep
+                    <div className="absolute top-1 right-1 flex flex-col items-end gap-1">
+                      <div className="px-2 py-1 bg-primary/90 backdrop-blur-sm text-primary-foreground text-[9px] md:text-[10px] font-bold rounded-md shadow-lg border border-primary-foreground/20">
+                        S{latestSeason} · {latestSeasonEps}ep
+                      </div>
+                      {movie.isCompleted && (
+                        <div className="px-1.5 py-0.5 bg-green-500 text-white text-[7px] md:text-[9px] font-bold rounded shadow-md uppercase tracking-wide">
+                          ✓ Completed
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
-                {movie.type === "series" && movie.isCompleted && (
-                  <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-green-500 text-white text-[7px] md:text-[9px] font-bold rounded shadow-md uppercase tracking-wide">
+                {movie.type === "series" && movie.isCompleted && !movie.episodes && (
+                  <div className="absolute top-1 right-1 px-1.5 py-0.5 bg-green-500 text-white text-[7px] md:text-[9px] font-bold rounded shadow-md uppercase tracking-wide">
                     ✓ Completed
                   </div>
                 )}
