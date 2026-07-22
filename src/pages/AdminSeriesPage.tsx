@@ -25,6 +25,7 @@ interface Series {
   episodes: Episode[];
   seasons?: number;
   isRecentlyAdded?: boolean;
+  isCompleted?: boolean;
 }
 
 const CATEGORIES = ["Action", "Comedy", "Drama", "Horror", "Romance", "Sci-Fi", "Thriller", "Fantasy", "Western", "Documentary", "Nigerian", "Ugandan", "Bongo", "Ghanaian", "Animation", "Special"];
@@ -34,6 +35,7 @@ const defaultForm = () => ({
   category: "Action", seasons: 1,
   episodes: [{ episodeNumber: 1, title: "", streamlink: "", season: 1 }] as Episode[],
   isRecentlyAdded: false,
+  isCompleted: false,
 });
 
 export default function AdminSeriesPage() {
@@ -157,7 +159,7 @@ export default function AdminSeriesPage() {
         title: newSeries.title, image: newSeries.image,
         rating: Number(newSeries.rating), year: newSeries.year,
         category: newSeries.category, seasons: newSeries.seasons,
-        episodes: newSeries.episodes, isRecentlyAdded: newSeries.isRecentlyAdded,
+        episodes: newSeries.episodes, isRecentlyAdded: newSeries.isRecentlyAdded, isCompleted: newSeries.isCompleted,
         ...(editingSeries ? { updatedAt: new Date().toISOString() } : { createdAt: new Date().toISOString() }),
       };
 
@@ -243,7 +245,18 @@ export default function AdminSeriesPage() {
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Number of Seasons</label>
                 <Input type="number" min="1" value={newSeries.seasons} onChange={(e) => handleSeasonsChange(parseInt(e.target.value) || 1)} className="bg-secondary border-border text-foreground" />
-              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-4 items-center">
+              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                <input type="checkbox" checked={newSeries.isCompleted} onChange={(e) => setNewSeries({ ...newSeries, isCompleted: e.target.checked })} className="w-4 h-4 accent-primary" />
+                Mark as Completed Series
+              </label>
+              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                <input type="checkbox" checked={newSeries.isRecentlyAdded} onChange={(e) => setNewSeries({ ...newSeries, isRecentlyAdded: e.target.checked })} className="w-4 h-4 accent-primary" />
+                Recently Added
+              </label>
+            </div>
             </div>
 
             {/* Season tabs */}
@@ -372,6 +385,7 @@ export default function AdminSeriesPage() {
                     category: s.category, seasons: s.seasons || 1,
                     episodes: (s.episodes || []).map(ep => ({ ...ep, season: ep.season || 1 })),
                     isRecentlyAdded: s.isRecentlyAdded || false,
+                    isCompleted: s.isCompleted || false,
                   });
                   setActiveSeason(1);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
