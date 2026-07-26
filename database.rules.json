@@ -311,6 +311,14 @@
         "submittedAt": { ".validate": "newData.isString()" },
         "updatedAt": { ".validate": "newData.isString()" }
       }
+    },
+    "content_views": {
+      ".read": true,
+      "$id": {
+        ".write": "auth != null",
+        ".validate": "newData.isNumber()"
+      }
     }
   }
 }
+

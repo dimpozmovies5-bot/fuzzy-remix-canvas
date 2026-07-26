@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { database } from "@/lib/firebase";
-import { ref, onValue, get } from "firebase/database";
-import { ChevronRight } from "lucide-react";
+import { ref, onValue, get, runTransaction } from "firebase/database";
+import { ChevronRight, Flame } from "lucide-react";
 import { Play, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { useSubscription } from "@/lib/subscription-context";
 import { SUBSCRIPTION_PLANS } from "@/lib/subscription-context";
 import { Check } from "lucide-react";
+
 
 interface Episode {
   episodeNumber: number;
@@ -57,16 +58,31 @@ export default function PopularGrid({
   const [selectedSeries, setSelectedSeries] = useState<Movie | null>(null);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [showAllEpisodes, setShowAllEpisodes] = useState(false);
+  const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
 
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const { hasActiveSubscription } = useSubscription();
 
   useEffect(() => {
+    const unsub = onValue(ref(database, "content_views"), (snap) => {
+      setViewCounts(snap.val() || {});
+    });
+    return () => unsub();
+  }, []);
+
+  const trendingIds = useMemo(() => {
+    const entries = Object.entries(viewCounts).filter(([, c]) => (c || 0) >= 3);
+    entries.sort((a, b) => (b[1] || 0) - (a[1] || 0));
+    return new Set(entries.slice(0, 5).map(([id]) => id));
+  }, [viewCounts]);
+
+  useEffect(() => {
     setSelectedSeries(null);
     setSelectedSeason(1);
     setShowAllEpisodes(false);
   }, [activeFilter, searchQuery, categoryFilter]);
+
 
   // Open subscription modal when subscription filter is selected
   useEffect(() => {
@@ -191,6 +207,8 @@ export default function PopularGrid({
   }, [activeFilter, searchQuery]);
 
   const handlePosterClick = (movie: Movie) => {
+    // Track a "check" for every poster tap so trending reflects real interest
+    runTransaction(ref(database, `content_views/${movie.id}`), (cur) => (typeof cur === "number" ? cur : 0) + 1).catch(() => {});
     if (!user) {
       onRequireAuth?.();
       return;
@@ -206,6 +224,7 @@ export default function PopularGrid({
       navigate(`/play/${movie.id}?type=${type}`);
     }
   };
+
 
   // Apply category filter
   const filteredMovies = categoryFilter === "all"
@@ -334,6 +353,8 @@ export default function PopularGrid({
             onShowSubscription={onShowSubscription}
             hasActiveSubscription={hasActiveSubscription}
             isAdmin={isAdmin}
+            trendingIds={trendingIds}
+
           />
         )}
       </div>
@@ -356,6 +377,8 @@ export default function PopularGrid({
             onShowSubscription={onShowSubscription}
             hasActiveSubscription={hasActiveSubscription}
             isAdmin={isAdmin}
+            trendingIds={trendingIds}
+
             showDateBadge
           />
         </section>
@@ -482,6 +505,8 @@ export default function PopularGrid({
             onShowSubscription={onShowSubscription}
             hasActiveSubscription={hasActiveSubscription}
             isAdmin={isAdmin}
+            trendingIds={trendingIds}
+
           />
         )}
       </section>
@@ -511,9 +536,11 @@ interface ContentGridProps {
   hasActiveSubscription: boolean;
   isAdmin: boolean;
   showDateBadge?: boolean;
+  trendingIds?: Set<string>;
 }
 
-function ContentGrid({ items, onPosterClick, onSelectSeries, showDateBadge }: ContentGridProps) {
+function ContentGrid({ items, onPosterClick, onSelectSeries, showDateBadge, trendingIds }: ContentGridProps) {
+
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 md:gap-2.5 w-full overflow-hidden">
       {items.map((movie) => {
@@ -543,6 +570,13 @@ function ContentGrid({ items, onPosterClick, onSelectSeries, showDateBadge }: Co
                     {badge}
                   </div>
                 )}
+                {trendingIds?.has(movie.id) && (
+                  <div className={`absolute ${badge ? 'top-6' : 'top-1'} left-1 flex items-center gap-0.5 px-1.5 py-0.5 bg-gradient-to-r from-primary to-accent text-primary-foreground text-[7px] md:text-[9px] font-bold rounded shadow-[0_0_10px_hsl(var(--primary)/0.55)] uppercase tracking-wide animate-pulse`}>
+                    <Flame className="w-2.5 h-2.5" />
+                    Trending
+                  </div>
+                )}
+
                 {(() => {
                   if (!movie.createdAt) return null;
                   const isNew = Date.now() - new Date(movie.createdAt).getTime() < 48 * 60 * 60 * 1000;
