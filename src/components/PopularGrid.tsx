@@ -207,6 +207,8 @@ export default function PopularGrid({
   }, [activeFilter, searchQuery]);
 
   const handlePosterClick = (movie: Movie) => {
+    // Track a "check" for every poster tap so trending reflects real interest
+    runTransaction(ref(database, `content_views/${movie.id}`), (cur) => (typeof cur === "number" ? cur : 0) + 1).catch(() => {});
     if (!user) {
       onRequireAuth?.();
       return;
@@ -222,6 +224,7 @@ export default function PopularGrid({
       navigate(`/play/${movie.id}?type=${type}`);
     }
   };
+
 
   // Apply category filter
   const filteredMovies = categoryFilter === "all"
