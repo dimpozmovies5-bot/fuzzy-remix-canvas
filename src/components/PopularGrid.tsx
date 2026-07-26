@@ -58,16 +58,31 @@ export default function PopularGrid({
   const [selectedSeries, setSelectedSeries] = useState<Movie | null>(null);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [showAllEpisodes, setShowAllEpisodes] = useState(false);
+  const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
 
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const { hasActiveSubscription } = useSubscription();
 
   useEffect(() => {
+    const unsub = onValue(ref(database, "content_views"), (snap) => {
+      setViewCounts(snap.val() || {});
+    });
+    return () => unsub();
+  }, []);
+
+  const trendingIds = useMemo(() => {
+    const entries = Object.entries(viewCounts).filter(([, c]) => (c || 0) >= 3);
+    entries.sort((a, b) => (b[1] || 0) - (a[1] || 0));
+    return new Set(entries.slice(0, 5).map(([id]) => id));
+  }, [viewCounts]);
+
+  useEffect(() => {
     setSelectedSeries(null);
     setSelectedSeason(1);
     setShowAllEpisodes(false);
   }, [activeFilter, searchQuery, categoryFilter]);
+
 
   // Open subscription modal when subscription filter is selected
   useEffect(() => {
