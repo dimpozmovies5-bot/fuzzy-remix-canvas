@@ -530,9 +530,11 @@ interface ContentGridProps {
   hasActiveSubscription: boolean;
   isAdmin: boolean;
   showDateBadge?: boolean;
+  trendingIds?: Set<string>;
 }
 
-function ContentGrid({ items, onPosterClick, onSelectSeries, showDateBadge }: ContentGridProps) {
+function ContentGrid({ items, onPosterClick, onSelectSeries, showDateBadge, trendingIds }: ContentGridProps) {
+
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 md:gap-2.5 w-full overflow-hidden">
       {items.map((movie) => {
