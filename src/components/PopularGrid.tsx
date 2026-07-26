@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { database } from "@/lib/firebase";
-import { ref, onValue, get } from "firebase/database";
-import { ChevronRight } from "lucide-react";
+import { ref, onValue, get, runTransaction } from "firebase/database";
+import { ChevronRight, Flame } from "lucide-react";
 import { Play, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { useSubscription } from "@/lib/subscription-context";
 import { SUBSCRIPTION_PLANS } from "@/lib/subscription-context";
 import { Check } from "lucide-react";
+
 
 interface Episode {
   episodeNumber: number;
