@@ -505,6 +505,8 @@ export default function PopularGrid({
             onShowSubscription={onShowSubscription}
             hasActiveSubscription={hasActiveSubscription}
             isAdmin={isAdmin}
+            trendingIds={trendingIds}
+
           />
         )}
       </section>
