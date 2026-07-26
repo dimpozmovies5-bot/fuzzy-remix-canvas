@@ -95,8 +95,8 @@
     letter-spacing: 0.005em;
     line-height: 1.6;
     min-height: 100vh;
-    background-color: #000000;
-    background-image: radial-gradient(circle at center, #082542 0%, #04101f 30%, #000000 70%);
+    background-color: #05010f;
+    background-image: radial-gradient(circle at center, #2a1361 0%, #140640 30%, #05010f 70%);
     background-attachment: fixed;
   }
 
@@ -106,16 +106,17 @@
     inset: 0;
     pointer-events: none;
     z-index: 9999;
-    border: 2px solid hsl(200 95% 70% / 0.55);
+    border: 2px solid hsl(265 90% 72% / 0.55);
     border-radius: 14px;
     box-shadow:
-      0 0 12px hsl(200 100% 65% / 0.55),
-      0 0 28px hsl(200 100% 65% / 0.35),
-      0 0 60px hsl(200 100% 65% / 0.25),
-      inset 0 0 12px hsl(200 100% 65% / 0.35),
-      inset 0 0 40px hsl(200 100% 65% / 0.15);
+      0 0 12px hsl(265 95% 70% / 0.55),
+      0 0 28px hsl(265 95% 70% / 0.35),
+      0 0 60px hsl(265 95% 70% / 0.25),
+      inset 0 0 12px hsl(265 95% 70% / 0.35),
+      inset 0 0 40px hsl(265 95% 70% / 0.15);
     animation: frame-glow 3.2s ease-in-out infinite;
   }
+
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Bricolage Grotesque', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
