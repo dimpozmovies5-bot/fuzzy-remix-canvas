@@ -564,6 +564,13 @@ function ContentGrid({ items, onPosterClick, onSelectSeries, showDateBadge, tren
                     {badge}
                   </div>
                 )}
+                {trendingIds?.has(movie.id) && (
+                  <div className={`absolute ${badge ? 'top-6' : 'top-1'} left-1 flex items-center gap-0.5 px-1.5 py-0.5 bg-gradient-to-r from-primary to-accent text-primary-foreground text-[7px] md:text-[9px] font-bold rounded shadow-[0_0_10px_hsl(var(--primary)/0.55)] uppercase tracking-wide animate-pulse`}>
+                    <Flame className="w-2.5 h-2.5" />
+                    Trending
+                  </div>
+                )}
+
                 {(() => {
                   if (!movie.createdAt) return null;
                   const isNew = Date.now() - new Date(movie.createdAt).getTime() < 48 * 60 * 60 * 1000;
