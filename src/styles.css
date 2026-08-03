@@ -155,22 +155,22 @@
 }
 @keyframes frame-glow {
   0%, 100% {
-    border-color: hsl(265 90% 72% / 0.5);
+    border-color: hsl(199 95% 70% / 0.5);
     box-shadow:
-      0 0 12px hsl(265 95% 70% / 0.5),
-      0 0 28px hsl(265 95% 70% / 0.3),
-      0 0 60px hsl(265 95% 70% / 0.2),
-      inset 0 0 12px hsl(265 95% 70% / 0.3),
-      inset 0 0 40px hsl(265 95% 70% / 0.12);
+      0 0 12px hsl(199 95% 70% / 0.5),
+      0 0 28px hsl(199 95% 70% / 0.3),
+      0 0 60px hsl(0 88% 78% / 0.18),
+      inset 0 0 12px hsl(199 95% 70% / 0.3),
+      inset 0 0 40px hsl(0 88% 78% / 0.1);
   }
   50% {
-    border-color: hsl(275 100% 78% / 0.9);
+    border-color: hsl(0 88% 80% / 0.85);
     box-shadow:
-      0 0 20px hsl(275 100% 75% / 0.85),
-      0 0 45px hsl(275 100% 75% / 0.55),
-      0 0 90px hsl(275 100% 75% / 0.4),
-      inset 0 0 20px hsl(275 100% 75% / 0.55),
-      inset 0 0 60px hsl(275 100% 75% / 0.25);
+      0 0 20px hsl(0 88% 80% / 0.7),
+      0 0 45px hsl(199 95% 72% / 0.55),
+      0 0 90px hsl(199 95% 72% / 0.35),
+      inset 0 0 20px hsl(0 88% 80% / 0.45),
+      inset 0 0 60px hsl(199 95% 72% / 0.22);
   }
 }
 @keyframes wa-pop {
@@ -207,7 +207,9 @@
   box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
 }
 .gradient-text {
-  color: #c4b5fd;
+  background: linear-gradient(135deg, hsl(199 95% 70%), hsl(0 88% 78%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   font-family: 'Bebas Neue', 'Archivo Black', sans-serif;
   letter-spacing: 0.04em;
 }
@@ -221,8 +223,8 @@
   50% { opacity: 0.5; transform: scale(1.15); }
 }
 @keyframes sky-glow-pulse {
-  0%, 100% { box-shadow: 0 0 15px hsl(265 95% 70% / 0.35), 0 0 30px hsl(265 95% 70% / 0.12); }
-  50% { box-shadow: 0 0 25px hsl(265 95% 70% / 0.55), 0 0 50px hsl(265 95% 70% / 0.22); }
+  0%, 100% { box-shadow: 0 0 15px hsl(199 95% 70% / 0.35), 0 0 30px hsl(0 88% 78% / 0.12); }
+  50% { box-shadow: 0 0 25px hsl(199 95% 70% / 0.55), 0 0 50px hsl(0 88% 78% / 0.22); }
 }
 .sky-float { animation: sky-float 5s ease-in-out infinite; }
 .sky-pulse { animation: sky-pulse 3s ease-in-out infinite; }
@@ -230,8 +232,8 @@
 
 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px hsl(265 95% 70% / 0.35); }
-  50% { box-shadow: 0 0 40px hsl(265 95% 70% / 0.65); }
+  0%, 100% { box-shadow: 0 0 20px hsl(199 95% 70% / 0.35); }
+  50% { box-shadow: 0 0 40px hsl(199 95% 70% / 0.65); }
 }
 @keyframes shimmer {
   0% { background-position: -1000px 0; }
@@ -242,14 +244,14 @@
   50% { background-position: 100% 50%; }
 }
 .animate-gradient-border {
-  background: linear-gradient(90deg, hsl(258 85% 68%), hsl(285 90% 75%), hsl(258 85% 68%));
+  background: linear-gradient(90deg, hsl(199 95% 68%), hsl(0 88% 78%), hsl(199 95% 68%));
   background-size: 300% 300%;
   animation: gradient-border 3s ease infinite;
 }
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-glow { animation: glow 2s ease-in-out infinite; }
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent, hsl(275 95% 78% / 0.14), transparent);
+  background: linear-gradient(90deg, transparent, hsl(199 95% 78% / 0.14), transparent);
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
 }
