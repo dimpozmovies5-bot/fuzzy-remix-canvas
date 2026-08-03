@@ -212,7 +212,7 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-[560px] max-h-[94vh] overflow-y-auto rounded-3xl bg-[#0a0a0a] border border-white/10 shadow-2xl"
+        className="relative w-full max-w-[560px] max-h-[94vh] overflow-y-auto rounded-3xl bg-card border border-white/10 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {step === "plans" && <PlansView onClose={onClose} onSelect={handleSelectPlan} />}
@@ -354,7 +354,7 @@ function PlansView({ onClose, onSelect }: { onClose: () => void; onSelect: (p: S
                     "conic-gradient(from 180deg at 50% 50%, #ff2e63, #ff8a3d, #ffe66d, #7cff6b, #4de0ff, #6b6bff, #d16bff, #ff2e63)",
                 }}
               >
-                <div className="rounded-[14px] bg-[#0a0a0a] py-5 px-3 flex flex-col items-center gap-2">
+                <div className="rounded-[14px] bg-background py-5 px-3 flex flex-col items-center gap-2">
                   <Icon className="w-6 h-6 text-primary" strokeWidth={2} />
                   <span className="text-white/60 text-xs font-medium">{plan.duration}</span>
                   <div className="text-white text-lg font-black tracking-tight">
