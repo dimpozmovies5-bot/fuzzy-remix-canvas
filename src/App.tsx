@@ -23,6 +23,7 @@ import AdminWalletPage from "./pages/AdminWalletPage";
 import AdminActivityPage from "./pages/AdminActivityPage";
 import AdminAgentsPage from "./pages/AdminAgentsPage";
 import RouteTracker from "./components/RouteTracker";
+import PhoneNumberGate from "./components/PhoneNumberGate";
 
 
 const queryClient = new QueryClient();
