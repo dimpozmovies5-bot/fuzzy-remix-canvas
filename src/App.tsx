@@ -37,6 +37,8 @@ const App = () => (
         <AuthProvider>
           <SubscriptionProvider>
             <RouteTracker />
+            <PhoneNumberGate />
+            
             
             <Routes>
               <Route path="/" element={<Index />} />
