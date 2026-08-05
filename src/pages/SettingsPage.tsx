@@ -3,8 +3,9 @@ import { useAuth } from "@/lib/auth-context";
 import { useNavigate } from "react-router-dom";
 import { updatePassword, updateProfile } from "firebase/auth";
 import { database } from "@/lib/firebase";
-import { ref, set } from "firebase/database";
+import { ref, update, get } from "firebase/database";
 import { ChevronLeft } from "lucide-react";
+import { normalizePhone } from "@/components/PhoneNumberGate";
 import Sidebar from "@/components/Sidebar";
 import TopHeader from "@/components/TopHeader";
 import MobileNav from "@/components/MobileNav";
@@ -13,11 +14,19 @@ export default function SettingsPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState(user?.displayName || "");
+  const [phone, setPhone] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    if (!user) return;
+    get(ref(database, `users/${user.uid}/phoneNumber`))
+      .then((snap) => setPhone(snap.exists() ? String(snap.val() || "") : ""))
+      .catch(() => {});
+  }, [user?.uid]);
 
   if (loading) {
     return (
@@ -42,12 +51,21 @@ export default function SettingsPage() {
       if (displayName && displayName !== user.displayName) {
         await updateProfile(user, { displayName });
       }
-      await set(ref(database, `users/${user.uid}`), {
+      const normalized = normalizePhone(phone);
+      if (!normalized) {
+        setError("Enter a valid phone number (e.g. 0773566069)");
+        setSaving(false);
+        return;
+      }
+      await update(ref(database, `users/${user.uid}`), {
         email: user.email,
         displayName: displayName || user.email?.split("@")[0],
         photoURL: user.photoURL,
+        phoneNumber: normalized,
+        phoneUpdatedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
+      setPhone(normalized);
       setSuccess("Profile updated successfully!");
     } catch (err: any) {
       setError(err.message || "Failed to update profile");
@@ -131,6 +149,19 @@ export default function SettingsPage() {
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Enter your name"
                     className="w-full px-3 py-2 bg-secondary text-foreground rounded border border-border text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Phone Number</label>
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    value={phone}
+                    maxLength={20}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="e.g. 0773566069"
+                    className="w-full px-3 py-2 bg-secondary text-foreground rounded border border-border text-sm focus:outline-none focus:border-primary"
+                    required
                   />
                 </div>
                 <button
