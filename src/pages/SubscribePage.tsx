@@ -19,12 +19,12 @@ function normalizeUgandanMsisdn(raw: string): string | null {
 }
 
 const PLAN_ICONS: Record<string, typeof Clock> = {
-  "12hr": Clock,
   "3days": Zap,
   "1week": Star,
   "2weeks": Crown,
   "1month": Star,
   "6month": Calendar,
+  "1year": Calendar,
 };
 
 const FEATURES = [
