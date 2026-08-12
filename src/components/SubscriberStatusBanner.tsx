@@ -6,7 +6,7 @@ import { database } from "@/lib/firebase";
 import { ref as dbRef, get, update } from "firebase/database";
 import { toast } from "sonner";
 
-const AGENT_PLANS = new Set(["1week", "2weeks", "1month", "6month"]);
+const AGENT_PLANS = new Set(["1week", "2weeks", "1month", "6month", "1year"]);
 const MEMBER_PLAN = "3days";
 
 interface Props {
