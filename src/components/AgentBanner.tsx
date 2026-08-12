@@ -7,7 +7,7 @@ import { ref as dbRef, get } from "firebase/database";
 import AgentProfileModal from "./AgentProfileModal";
 
 // Plans that qualify as "Agent of the Week" (1 week or longer)
-const AGENT_PLANS = new Set(["1week", "2weeks", "1month", "6month"]);
+const AGENT_PLANS = new Set(["1week", "2weeks", "1month", "6month", "1year"]);
 // Short plan that gets the upgrade nudge
 const MEMBER_PLAN = "3days";
 
