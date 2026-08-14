@@ -1,4 +1,4 @@
-const API_BASE = "https://function-bun-production-c352.up.railway.app/api";
+const API_BASE = "https://function-bun-production-cad5.up.railway.app/api";
 
 export async function requestPayment(msisdn: string, amount: number, description: string) {
   const res = await fetch(`${API_BASE}/deposit`, {
