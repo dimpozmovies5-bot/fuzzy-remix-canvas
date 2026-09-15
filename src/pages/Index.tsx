@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import TopHeader from "@/components/TopHeader";
 import MobileNav from "@/components/MobileNav";
@@ -53,6 +55,16 @@ const Index = () => {
                 <span>📞</span>
                 <span>Contact Support: 0773566069</span>
               </a>
+              <Link
+                to="/agent"
+                className="flex items-center justify-between gap-2 w-full py-2.5 px-4 rounded-xl text-sm font-semibold border border-primary/40 bg-primary/10 text-foreground hover:bg-primary/20 transition"
+              >
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  Agent Zone — new titles first
+                </span>
+                <span className="text-xs text-primary">Open →</span>
+              </Link>
               <SubscriberStatusBanner onUpgrade={() => setShowSubscriptionModal(true)} />
               <CategoriesRow
                 onSelectCategory={setCategoryFilter}
