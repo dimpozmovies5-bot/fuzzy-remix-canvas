@@ -111,19 +111,19 @@ export default function AgentPage() {
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
             {items.map((item) => (
               <button key={`${item.type}-${item.id}`} onClick={() => open(item)} className="group text-left">
-                <div className="relative aspect-[2/3] rounded-xl overflow-hidden border border-border">
+                <div className="relative aspect-[2/3] rounded-xl overflow-hidden border border-amber-400/50 shadow-md shadow-amber-900/30">
                   <img
                     src={item.image || "/placeholder.svg"}
                     alt={item.title}
                     loading="lazy"
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition"
                   />
-                  <span className="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-primary text-primary-foreground">
+                  <span className="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-400 to-orange-500 text-amber-950 shadow">
                     Agent
                   </span>
                   {!canWatch && (
-                    <span className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                      <Lock className="w-5 h-5 text-primary" />
+                    <span className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                      <Lock className="w-5 h-5 text-amber-400" />
                     </span>
                   )}
                 </div>
@@ -131,7 +131,7 @@ export default function AgentPage() {
                 <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                   {item.rating ? (
                     <>
-                      <Star className="w-2.5 h-2.5 text-primary" /> {item.rating}
+                      <Star className="w-2.5 h-2.5 text-amber-400" /> {item.rating}
                     </>
                   ) : null}
                   {item.year ? ` · ${item.year}` : ""}
