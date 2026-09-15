@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Check, Loader2, Phone, Crown, Zap, Star, Clock, Calendar } from "lucide-react";
 import { type SubscriptionPlan, useSubscription } from "@/lib/subscription-context";
+import { serverDate, serverIso } from "@/lib/server-time";
 
 import { useAuth } from "@/lib/auth-context";
 import { requestPayment, checkRequestStatus, validatePhone } from "@/lib/payment-api";
@@ -124,7 +125,7 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
             msisdn,
             referenceId: internalRef,
             status: "pending",
-            timestamp: new Date().toISOString(),
+            timestamp: serverIso(),
           });
         } catch (e) { console.error("log tx error", e); }
         setStatusMsg("Payment prompt sent! Waiting for confirmation...");
@@ -188,7 +189,7 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
 
   const activateSubscription = async () => {
     if (!user || !selectedPlan) return;
-    const now = new Date();
+    const now = serverDate();
     const endDate = new Date(now.getTime() + selectedPlan.days * 24 * 60 * 60 * 1000);
     await set(ref(database, `subscriptions/${user.uid}`), {
       planId: selectedPlan.id,
@@ -303,7 +304,7 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
 }
 
 function PlansView({ onClose, onSelect }: { onClose: () => void; onSelect: (p: SubscriptionPlan) => void }) {
-  const { plans } = useSubscription();
+  const { normalPlans: plans } = useSubscription();
   return (
     <div className="relative">
       <div className="px-6 pt-7 pb-4 text-center relative">

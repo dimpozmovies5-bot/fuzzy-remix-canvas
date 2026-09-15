@@ -1,5 +1,6 @@
 import { Check, X, Clock, Zap, Star, Crown, Loader2, Phone, Calendar } from "lucide-react";
 import { type SubscriptionPlan, useSubscription } from "@/lib/subscription-context";
+import { serverDate, serverIso } from "@/lib/server-time";
 import { useNavigate } from "react-router-dom";
 import { useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -41,7 +42,7 @@ type Step = "plans" | "phone" | "processing" | "success" | "failed";
 export default function SubscribePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { refreshSubscription, plans } = useSubscription();
+  const { refreshSubscription, normalPlans: plans } = useSubscription();
   const [step, setStep] = useState<Step>("plans");
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [phone, setPhone] = useState("");
@@ -73,7 +74,7 @@ export default function SubscribePage() {
             userId: user.uid, userEmail: user.email || "",
             planId: selectedPlan.id, planName: selectedPlan.name,
             amount: selectedPlan.price, msisdn, referenceId: internalRef,
-            status: "pending", timestamp: new Date().toISOString(),
+            status: "pending", timestamp: serverIso(),
           });
         } catch {}
         setStatusMsg("Payment prompt sent! Waiting for confirmation...");
@@ -115,7 +116,7 @@ export default function SubscribePage() {
 
   const activateSubscription = async () => {
     if (!user || !selectedPlan) return;
-    const now = new Date();
+    const now = serverDate();
     const endDate = new Date(now.getTime() + selectedPlan.days * 24 * 60 * 60 * 1000);
     await set(ref(database, `subscriptions/${user.uid}`), {
       planId: selectedPlan.id, planName: selectedPlan.name,

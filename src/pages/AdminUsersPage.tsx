@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNavigate, Link } from "react-router-dom";
+import { serverDate, serverNow } from "@/lib/server-time";
 import { database } from "@/lib/firebase";
 import { ref as dbRef, get, set, remove } from "firebase/database";
 import { Users, Crown, UserX, UserCheck, Filter } from "lucide-react";
@@ -77,7 +78,7 @@ export default function AdminUsersPage() {
     const sub = subscriptions[userId];
     if (!sub) return "none";
     const endDate = new Date(sub.endDate);
-    return endDate > new Date() ? "active" : "expired";
+    return endDate.getTime() > serverNow() ? "active" : "expired";
   };
 
   const getUserPlanName = (userId: string): string => {
@@ -91,7 +92,7 @@ export default function AdminUsersPage() {
     const sub = subscriptions[userId];
     if (!sub) return "";
     const end = new Date(sub.endDate);
-    const now = new Date();
+    const now = serverDate();
     const diffMs = end.getTime() - now.getTime();
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -106,7 +107,7 @@ export default function AdminUsersPage() {
     const plan = SUBSCRIPTION_PLANS.find((p) => p.id === selectedPlan);
     if (!plan) return;
 
-    const now = new Date();
+    const now = serverDate();
     const endDate = new Date(now.getTime() + plan.days * 24 * 60 * 60 * 1000);
 
     try {
