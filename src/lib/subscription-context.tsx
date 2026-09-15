@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { database } from "./firebase";
 import { ref, get, set, onValue } from "firebase/database";
 import { useAuth } from "./auth-context";
+import { serverNow } from "./server-time";
 
 export interface SubscriptionPlan {
   id: string;
@@ -58,6 +59,8 @@ interface SubscriptionContextType {
   refreshSubscription: () => Promise<void>;
   currentPlanId: string | null;
   plans: SubscriptionPlan[];
+  /** Plans shown in the normal subscription list (Agent plans excluded) */
+  normalPlans: SubscriptionPlan[];
   /** true when the signed-in user's active plan unlocks the Agent Zone */
   isAgentSubscriber: boolean;
 }
@@ -91,8 +94,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
       if (snapshot.exists()) {
         const data = snapshot.val();
-        const endDate = new Date(data.endDate);
-        const now = new Date();
+        const endDate = new Date(data.endDate).getTime();
+        const now = serverNow();
 
         if (endDate > now) {
           setSubscription({ ...data, active: true });
@@ -118,8 +121,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const hasActiveSubscription = (() => {
     if (!subscription) return false;
     if (!subscription.active) return false;
-    const endDate = new Date(subscription.endDate);
-    return endDate > new Date();
+    const endDate = new Date(subscription.endDate).getTime();
+    return endDate > serverNow();
   })();
 
   const currentPlanId = subscription?.planId || null;
@@ -135,6 +138,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         refreshSubscription: checkSubscription,
         currentPlanId,
         plans,
+        normalPlans: plans.filter((p) => !p.isAgent),
         isAgentSubscriber,
       }}
     >
