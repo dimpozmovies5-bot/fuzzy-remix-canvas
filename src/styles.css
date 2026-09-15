@@ -267,3 +267,32 @@
   border: 1px solid hsl(var(--border) / 0.8);
   box-shadow: 0 0 15px hsl(var(--glow) / 0.25), 0 0 5px hsl(var(--glow) / 0.1);
 }
+
+/* ===== Agent Zone — unique amber/gold treatment ===== */
+.agent-zone-bg {
+  background-image:
+    radial-gradient(circle at 18% 12%, hsl(38 92% 50% / 0.16) 0%, transparent 38%),
+    radial-gradient(circle at 82% 88%, hsl(28 95% 55% / 0.13) 0%, transparent 32%),
+    radial-gradient(circle at center, hsl(30 40% 6%) 0%, #0a0f16 70%);
+}
+.agent-glow {
+  box-shadow:
+    0 0 24px hsl(38 92% 55% / 0.22),
+    0 0 60px hsl(28 95% 55% / 0.12),
+    inset 0 0 24px hsl(38 92% 55% / 0.06);
+  animation: agent-pulse 3.4s ease-in-out infinite;
+}
+@keyframes agent-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 24px hsl(38 92% 55% / 0.22),
+      0 0 60px hsl(28 95% 55% / 0.12),
+      inset 0 0 24px hsl(38 92% 55% / 0.06);
+  }
+  50% {
+    box-shadow:
+      0 0 34px hsl(38 95% 60% / 0.4),
+      0 0 90px hsl(28 95% 55% / 0.22),
+      inset 0 0 32px hsl(38 95% 60% / 0.12);
+  }
+}
