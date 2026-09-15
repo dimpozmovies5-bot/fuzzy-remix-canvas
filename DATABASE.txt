@@ -1,0 +1,811 @@
+================================================================================
+DIMPOZ MOVIES / LUO CINEMA — COMPLETE FIREBASE DATABASE & APP LOGIC REFERENCE
+For building the mobile app with the SAME backend as the website.
+================================================================================
+
+CONTENTS
+ 0.  Firebase project configuration (copy exactly)
+ 1.  Overview of the whole system
+ 2.  Full database tree (every node, every field)
+ 3.  Security rules (what is allowed and by whom)
+ 4.  AUTH: registration, login, saving the user, admin detection
+ 5.  PHONE NUMBER: compulsory collection + editing
+ 6.  SUBSCRIPTION PLANS: stored in DB, admin editable
+ 7.  PAYMENT FLOW (Relworx via Railway backend) step by step
+ 8.  ACTIVATING / CHECKING / EXPIRING a subscription
+ 9.  AGENT PLAN + AGENT ZONE (early access content)
+ 10. AGENT PROFILES (business name, location, telephone) + admin monitoring
+ 11. FETCHING MOVIES
+ 12. FETCHING SERIES + EPISODES + SEASONS (incl. the episode normalising trap)
+ 13. MUSIC, ANIMATION, ORIGINALS
+ 14. HOME PAGE: carousel, categories, filters, search, pagination
+ 15. TRENDING (content_views counter) + COMPLETED badge + NEW badge
+ 16. PLAY PAGE: gating, streaming, downloading, download limits
+ 17. CONTINUE WATCHING / WATCH HISTORY
+ 18. NOTIFICATIONS (global + per-user) + content_updates toasts
+ 19. PUSH (FCM tokens) for the mobile app
+ 20. ACTIVITY TRACKING & ANALYTICS (what admin sees)
+ 21. WALLET & TRANSACTIONS (admin)
+ 22. ADMIN DASHBOARD: every screen and what it writes
+ 23. CONTENT UPLOAD FORMS: exact objects to write
+ 24. Mobile app checklist / recommended screens
+ 25. Common errors and how to avoid them
+
+================================================================================
+0. FIREBASE PROJECT CONFIGURATION
+================================================================================
+Project: dinpoz-movies
+Realtime Database (NOT Firestore) — everything below lives in Realtime Database.
+
+Web / JS config:
+  apiKey:            AIzaSyDp0PJtvkubhI8pEDEpfO6ncRNHu_ZOQ5M
+  authDomain:        dinpoz-movies.firebaseapp.com
+  databaseURL:       https://dinpoz-movies-default-rtdb.firebaseio.com
+  projectId:         dinpoz-movies
+  storageBucket:     dinpoz-movies.firebasestorage.app
+  messagingSenderId: 975575262322
+  appId:             1:975575262322:web:c036de88720bc46ff08eeb
+  measurementId:     G-DXN6VGNN0W
+
+Android app: create an Android app in the same Firebase project
+(Project settings > Add app > Android), download google-services.json,
+use package name e.g. com.dimpoz.movies, and add your SHA-1 / SHA-256
+fingerprints if you want Google sign-in.
+iOS: add an iOS app, download GoogleService-Info.plist.
+
+Services used: Authentication (Email/Password + Google), Realtime Database,
+Storage (optional, for uploaded images), Cloud Messaging (optional, push).
+
+Admin account (hardcoded, checked by email):
+  arthurdimpoz@gmail.com
+Anything admin-only in the rules compares auth.token.email to that address.
+
+Payment backend (NOT firebase — a Railway service):
+  https://function-bun-production-f6bb.up.railway.app/api
+
+================================================================================
+1. OVERVIEW OF THE WHOLE SYSTEM
+================================================================================
+- Users sign in with Firebase Auth (email/password or Google).
+- On every auth state change the app writes/refreshes users/{uid}.
+- A user MUST save a phone number before using the app (blocking dialog).
+- Content (movies, series, music, animation, carousel) is public read,
+  admin-only write. So the app can show posters even before login.
+- Watching/downloading requires an ACTIVE SUBSCRIPTION stored at
+  subscriptions/{uid}. Admin bypasses this.
+- Subscriptions are bought with Mobile Money: the app calls the Railway
+  backend (/api/deposit), then polls /api/request-status until success,
+  then writes subscriptions/{uid} itself.
+- Plans are NOT hardcoded — they live at subscription_plans and the admin
+  edits them from the dashboard. One or more plans can be flagged isAgent.
+- Agent plan holders get the Agent Zone: content flagged isAgent = true,
+  which is uploaded there first and later moved to normal listings by admin.
+- Trending badges come from a per-content view counter at content_views/{id}.
+
+================================================================================
+2. FULL DATABASE TREE (every node and field)
+================================================================================
+
+users/{uid}
+  email             string
+  displayName       string   (falls back to email prefix)
+  photoURL          string|null
+  phoneNumber       string   E.164 e.g. "+256773566069"
+  phoneUpdatedAt    string ISO
+  lastLogin         string ISO
+  createdAt         string ISO (kept from first login)
+  isAdmin           boolean
+
+admins/{uid}                boolean            (optional extra admin list)
+adminSettings/password      string (min 4 chars)   admin dashboard gate code
+
+movies/{movieId}            (push() key)
+  title           string  REQUIRED
+  image           string  REQUIRED (poster URL)
+  rating           number 0-10 REQUIRED
+  year             number 1900-2100 REQUIRED
+  streamlink       string  (playable/downloadable video URL)
+  videoUrl         string  (legacy alias of streamlink)
+  category         string  (Action, Comedy, Nigerian, Ugandan, Bongo, ...)
+  genre            string
+  description      string
+  country          string
+  isTrending       boolean (manual trending flag)
+  isRecentlyAdded  boolean
+  isAgent          boolean (true = only visible in Agent Zone)
+  createdAt        string ISO
+  updatedAt        string ISO
+
+series/{seriesId}
+  title, image, rating, year   as above (REQUIRED)
+  seasons          number
+  episodes         object OR array of:
+      { episodeNumber: number, title: string, streamlink: string, season: number }
+  category, genre, description, country
+  isCompleted      boolean  -> shows "COMPLETED" under the episode badge
+  isRecentlyAdded  boolean
+  isTrending       boolean
+  isAgent          boolean
+  createdAt / updatedAt   string ISO
+
+originals/{id}       same shape as movies (house productions)
+animation/{id}       title, image, rating, year, genre, videoUrl, episodes, createdAt
+music/{id}           title, image, artist (REQUIRED), videoUrl, year, createdAt
+
+carousel/{id}        hero slider
+  title REQUIRED, subtitle, image REQUIRED, videoUrl, type ("movie"|"series"), createdAt
+
+subscription_plans/{planId}
+  name       string  e.g. "Agent Early Access"
+  duration   string  human label e.g. "4 Days"
+  price      number  UGX
+  days       number  length in days
+  isAgent    boolean unlocks Agent Zone
+  order      number  sort position
+  Defaults if the node is empty (app falls back to these):
+    agent   Agent Early Access  4 Days   10000  4 days  isAgent
+    3days   2 Days Pass         2 Days    5000  2 days
+    1week   1 Week Pass         1 Week   12000  7 days
+    2weeks  2 Weeks Pass        2 Weeks  17000  14 days
+    1month  1 Month Pass        1 Month  30000  30 days
+    6month  6 Months Pass       6 Months 150000 180 days
+    1year   1 Year Pass         1 Year   600000 365 days
+
+subscriptions/{uid}
+  planId     string  REQUIRED
+  planName   string
+  startDate  string ISO REQUIRED
+  endDate    string ISO REQUIRED
+  active     boolean REQUIRED
+  amount     number
+  paymentRef string  internal_reference from the payment backend
+
+transactions/{internal_reference}
+  userId, userEmail, planId, planName
+  amount     number REQUIRED
+  msisdn     string
+  referenceId string
+  status     "pending" | "successful" | "failed" | "cancelled"
+  message    string
+  timestamp  string ISO REQUIRED
+  (indexed on timestamp, userId, status)
+
+agent_profiles/{uid}
+  userId, email, fullName, businessName, location, telephone,
+  planId, submittedAt ISO, updatedAt ISO
+  (indexed on planId, submittedAt)
+
+content_views/{contentId}   number   (incremented with a transaction on open)
+
+continueWatching/{uid}/{contentId}
+  contentId REQUIRED, title REQUIRED, image REQUIRED,
+  progress number 0-100 REQUIRED, lastWatched number (ms) REQUIRED,
+  contentType string, streamlink string
+
+watchHistory/{uid}/{contentId}
+  contentId, title, image, progress(0-100), lastWatched(number),
+  videoUrl, type
+
+notifications/{id}                  broadcast, admin writes
+  title REQUIRED, timestamp REQUIRED (ISO or ms)
+  message, body, image, link, type, userId, target,
+  createdAt, expiresAt, read, readBy/{uid}: true
+user_notifications/{uid}/{id}       per-user copy (user may write own)
+content_updates/{id}                new-content toasts
+  type REQUIRED ("movie"|"series"|...), contentId REQUIRED, createdAt REQUIRED,
+  title, image, message, updatedAt
+
+push_subscriptions/{uid}/{deviceId}   token|endpoint, userAgent, platform, createdAt, lastSeen
+fcm_tokens/{uid}/...                  device tokens for FCM
+
+navigation_activity/{eventId}   userId REQUIRED, timestamp REQUIRED, section, path
+user_activity/{eventId}         userId, timestamp, type, details
+analytics/...                    free-form, any signed-in user may write
+blockedDevices/{deviceId}        blockedAt ISO, reason
+wallet/balance                   number OR { amount, updatedBy, updatedAt }
+wallet/transactions/{txId}       type, amount, timestamp (REQUIRED)
+
+================================================================================
+3. SECURITY RULES — WHO CAN DO WHAT
+================================================================================
+The live rules file is database.rules.json in this project. Summary:
+
+PUBLIC READ (no login): movies, series, originals, music, animation,
+carousel, content_updates, content_views.
+ADMIN-ONLY WRITE on all of those (auth.token.email == arthurdimpoz@gmail.com).
+
+OWNER-OR-ADMIN read+write: users/{uid}, subscriptions/{uid},
+continueWatching/{uid}, watchHistory/{uid}, agent_profiles/{uid},
+user_notifications/{uid}, push_subscriptions/{uid}, fcm_tokens/{uid}.
+
+ANY SIGNED-IN USER may write (append) to: transactions, navigation_activity,
+user_activity, analytics, content_views/{id}, wallet.
+Only admin may READ those.
+
+notifications: read by anyone signed in, written by admin, but each user may
+write notifications/{id}/readBy/{ownUid}.
+
+IMPORTANT: rules must be published in the Firebase console
+(Realtime Database > Rules > paste database.rules.json > Publish),
+otherwise saving agent profiles, plans or views is rejected with
+"PERMISSION_DENIED".
+
+If you add subscription_plans editing from the app, the rules need:
+  "subscription_plans": {
+    ".read": true,
+    ".write": "auth != null && auth.token.email === 'arthurdimpoz@gmail.com'"
+  }
+and for agent flags on content nothing extra is needed (isAgent is just a field,
+but add ".validate": "newData.isBoolean()" for isAgent / isCompleted if you
+keep strict per-field validation).
+
+================================================================================
+4. AUTH — REGISTRATION, LOGIN, SAVING THE USER, ADMIN
+================================================================================
+Methods enabled: Email/Password and Google.
+
+REGISTER (JS):
+  import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  await updateProfile(cred.user, { displayName: name });
+
+LOGIN:
+  await signInWithEmailAndPassword(auth, email, password);
+GOOGLE:
+  await signInWithPopup(auth, new GoogleAuthProvider());     // web
+  // Android: GoogleSignIn -> GoogleAuthProvider.getCredential(idToken, null)
+  //          -> FirebaseAuth.signInWithCredential(credential)
+LOGOUT:
+  await signOut(auth);
+RESET PASSWORD:
+  await sendPasswordResetEmail(auth, email);
+
+ON EVERY AUTH STATE CHANGE the app does exactly this (mirror it in mobile):
+  onAuthStateChanged(auth, async (currentUser) => {
+    if (!currentUser) { /* clear state */ return; }
+    const userRef = ref(database, `users/${currentUser.uid}`);
+    const snap = await get(userRef);
+    await set(userRef, {
+      email: currentUser.email,
+      displayName: currentUser.displayName || currentUser.email.split("@")[0],
+      photoURL: currentUser.photoURL,
+      phoneNumber: currentUser.phoneNumber || snap.val()?.phoneNumber || "",
+      lastLogin: new Date().toISOString(),
+      createdAt: snap.exists() ? snap.val().createdAt : new Date().toISOString(),
+      isAdmin: currentUser.email.toLowerCase() === "arthurdimpoz@gmail.com",
+    });
+  });
+Note: set() REPLACES the node. Keep createdAt and phoneNumber as shown, or use
+update() instead if you add more fields in the mobile app.
+
+ADMIN DETECTION: lowercase+trim the email and compare with
+"arthurdimpoz@gmail.com". Admin also passes the extra dashboard code stored at
+adminSettings/password (read it, compare, then allow the dashboard).
+
+Web-only extra: on login the app clears stale payment keys from
+localStorage/sessionStorage and payment URLs from the cache, once per 30 min,
+so a failed payment does not block a retry. On mobile the equivalent is: do not
+cache /api/deposit or /api/request-status responses, and clear any stored
+pending reference when a payment ends.
+
+================================================================================
+5. PHONE NUMBER — COMPULSORY, THEN EDITABLE
+================================================================================
+Right after login, read users/{uid}/phoneNumber. If it is missing or invalid,
+show a BLOCKING dialog that cannot be dismissed until a valid number is saved.
+
+Normaliser (use this exact logic everywhere):
+  strip everything except digits and a leading +
+  if it starts with "+", drop the +
+  if 10 digits starting with "0"  -> "256" + rest         (0773566069)
+  else if 9 digits starting with "7" -> "256" + all       (773566069)
+  reject if fewer than 8 or more than 15 digits
+  result = "+" + digits          e.g. "+256773566069"
+This accepts local Ugandan numbers AND any international number.
+
+Save with UPDATE (never set, or you wipe the user node):
+  await update(ref(database, `users/${uid}`), {
+    phoneNumber: normalized,
+    email: user.email,
+    phoneUpdatedAt: new Date().toISOString(),
+  });
+
+Editing later: the Settings screen reads users/{uid}/phoneNumber, lets the user
+change it, and writes it back with the same update() + normaliser.
+
+================================================================================
+6. SUBSCRIPTION PLANS — LIVE FROM THE DATABASE
+================================================================================
+Listen (do not one-shot read) so admin edits appear instantly:
+  onValue(ref(database, "subscription_plans"), snap => {
+    const val = snap.val();
+    const plans = !val ? DEFAULT_PLANS :
+      Object.entries(val).map(([id, p]) => ({
+        id,
+        name: p.name ?? id,
+        duration: p.duration ?? "",
+        price: Number(p.price) || 0,
+        days: Number(p.days) || 0,
+        isAgent: p.isAgent === true,
+        order: typeof p.order === "number" ? p.order : 99,
+      })).sort((a,b) => (a.order-b.order) || (a.price-b.price));
+  });
+If the node is empty the app falls back to the default list in section 2.
+
+ADMIN writes a plan:
+  await set(ref(database, `subscription_plans/${planId}`), {
+    name, duration, price: Number(price), days: Number(days),
+    isAgent: !!isAgent, order: Number(order),
+  });
+ADMIN deletes a plan:
+  await remove(ref(database, `subscription_plans/${planId}`));
+Deleting a plan does not cancel existing subscriptions; they keep working until
+endDate because subscriptions/{uid} stores planName, days-derived endDate etc.
+
+================================================================================
+7. PAYMENT FLOW (MOBILE MONEY) — STEP BY STEP
+================================================================================
+Backend base URL:
+  https://function-bun-production-f6bb.up.railway.app/api
+
+Endpoints:
+  POST /api/deposit          { msisdn, amount, description }  -> start collection
+  POST /api/withdraw         { msisdn, amount, description }  -> send money
+  POST /api/validate-phone   { msisdn }                       -> check operator
+  GET  /api/wallet/balance                                    -> float balance
+  GET  /api/request-status?internal_reference=XXXX            -> poll a request
+  GET  /api/transactions                                      -> backend list
+
+FULL PURCHASE SEQUENCE:
+ 1. User picks a plan (from subscription_plans).
+ 2. App asks for the phone number (prefill users/{uid}/phoneNumber),
+    normalise it with the section-5 normaliser (must be +2567...).
+ 3. Optional: POST /api/validate-phone to confirm the number is MTN/Airtel.
+ 4. POST /api/deposit with
+      { msisdn, amount: plan.price, description: "LUO CINEMA <plan.name> Subscription" }
+    Response contains success + internal_reference
+    (sometimes nested: result.internal_reference OR result.relworx.internal_reference).
+ 5. Immediately record the attempt:
+      set(ref(database, `transactions/${internal_reference}`), {
+        userId, userEmail, planId, planName, amount, msisdn,
+        referenceId: internal_reference, status: "pending",
+        timestamp: new Date().toISOString(),
+      });
+ 6. Show "Payment prompt sent — approve on your phone".
+ 7. POLL GET /api/request-status?internal_reference=... every 1 second,
+    max ~90 attempts (90 s), then time out.
+    Status can appear as res.request_status, res.status,
+    res.relworx.request_status or res.relworx.status.
+      "success"   -> set transactions/{ref}/status = "successful",
+                     ACTIVATE the subscription (section 8), show success
+      "failed" / "cancelled" -> set status accordingly, show the message
+      anything else -> keep waiting
+ 8. ALWAYS stop the poll timer when leaving the screen.
+ IMPORTANT: url-encode internal_reference in the query string.
+
+If /api/deposit returns an error mentioning INVALID_IP, that is a Relworx
+whitelist problem on the payment server, not the app: the Railway service's
+outbound IP must be whitelisted in the Relworx dashboard (enable a static
+outbound IP in Railway > Networking, then whitelist that IP).
+
+================================================================================
+8. ACTIVATING, CHECKING AND EXPIRING A SUBSCRIPTION
+================================================================================
+ACTIVATE (after a successful payment):
+  const now = new Date();
+  const end = new Date(now.getTime() + plan.days * 24*60*60*1000);
+  await set(ref(database, `subscriptions/${uid}`), {
+    planId: plan.id, planName: plan.name,
+    startDate: now.toISOString(), endDate: end.toISOString(),
+    active: true, amount: plan.price, paymentRef: internal_reference,
+  });
+
+CHECK on app start and after login:
+  const snap = await get(ref(database, `subscriptions/${uid}`));
+  if (!snap.exists()) -> no subscription
+  else {
+    const data = snap.val();
+    if (new Date(data.endDate) > new Date())  -> ACTIVE
+    else { await set(ref, {...data, active: false}); -> EXPIRED }
+  }
+hasActiveSubscription = exists && active === true && endDate > now.
+Never trust active alone — always re-compare endDate, because nothing runs
+server-side to flip it.
+
+Admin can hand-set any dates, e.g. to start a 1-week plan at 08:30:
+  set(ref(database, `subscriptions/${uid}`), {
+    planId: "1week", planName: "1 Week Pass",
+    startDate: "2026-07-14T08:30:00.000Z",
+    endDate:   "2026-07-21T08:30:00.000Z",
+    active: true, amount: 12000,
+  });
+
+isAgentSubscriber = hasActiveSubscription AND the plan whose id ==
+subscriptions/{uid}.planId has isAgent === true.
+
+================================================================================
+9. AGENT PLAN + AGENT ZONE (EARLY ACCESS)
+================================================================================
+Purpose: new movies/series are uploaded to the Agent Zone first. Only users on
+an isAgent plan (default: 10,000 UGX for 4 days) can see and play them. The
+admin later releases them to everyone.
+
+Mechanic: a single boolean field isAgent on the content item.
+  isAgent === true   -> shows ONLY in the Agent Zone
+  isAgent falsy      -> shows in the normal home/movies/series listings
+
+AGENT ZONE fetch:
+  read movies and series, keep items where item.isAgent === true.
+  If the signed-in user is not an agent subscriber (and not admin), show the
+  posters locked with a "Get the Agent plan" call to action instead of playing.
+
+NORMAL LISTINGS must FILTER OUT agent items:
+  const visible = all.filter(i => i.isAgent !== true);   // admins may see all
+
+ADMIN moves an item between zones (one write):
+  await update(ref(database, `movies/${id}`), { isAgent: false });   // release
+  await update(ref(database, `series/${id}`), { isAgent: true });    // hold back
+Do this from the Agent Content admin screen with a simple toggle per row.
+
+================================================================================
+10. AGENT PROFILES + ADMIN MONITORING
+================================================================================
+Users on a week-or-longer plan are "Agents of the Week" and are invited (via a
+bouncy banner that auto-dismisses) to submit business details for advertising.
+2-day members instead see a "thanks for being a member — upgrade to Agent"
+banner. Both banners appear on every login.
+
+Save / edit (owner or admin only):
+  await set(ref(database, `agent_profiles/${uid}`), {
+    userId: uid, email, fullName, businessName, location, telephone,
+    planId: currentPlanId,
+    submittedAt: existing?.submittedAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+The form is optional: Cancel closes it, Okay/Save submits. After saving show
+the details read-only with Edit / Save / Cancel buttons.
+
+Admin screen: read the whole agent_profiles node, list every entry with its
+telephone and location, and allow delete:
+  await remove(ref(database, `agent_profiles/${uid}`));
+
+================================================================================
+11. FETCHING MOVIES
+================================================================================
+Live list (recommended, updates by itself):
+  onValue(ref(database, "movies"), snap => {
+    const val = snap.val() || {};
+    const list = Object.entries(val).map(([id, m]) => ({ id, ...m }));
+    setMovies(list.filter(m => m.isAgent !== true));
+  });
+One-shot:
+  const snap = await get(ref(database, "movies"));
+  const list = snap.exists() ? Object.entries(snap.val()).map(([id,m])=>({id,...m})) : [];
+
+Single movie:
+  const snap = await get(ref(database, `movies/${id}`));
+
+Kotlin (Android):
+  val db = FirebaseDatabase.getInstance().reference
+  db.child("movies").addValueEventListener(object: ValueEventListener {
+    override fun onDataChange(s: DataSnapshot) {
+      val list = s.children.mapNotNull { c ->
+        c.getValue(Movie::class.java)?.apply { id = c.key!! }
+      }.filter { it.isAgent != true }
+    }
+    override fun onCancelled(e: DatabaseError) {}
+  })
+
+Dart (Flutter):
+  FirebaseDatabase.instance.ref("movies").onValue.listen((event) {
+    final map = (event.snapshot.value as Map?) ?? {};
+    final list = map.entries.map((e) => Movie.fromMap(e.key, e.value)).toList();
+  });
+
+DISPLAY a movie card: poster = image, title, year, rating (star + rating),
+badges (see section 15). Tapping opens Play with type=movie.
+
+================================================================================
+12. FETCHING SERIES, SEASONS AND EPISODES
+================================================================================
+Read series exactly like movies, from the "series" node.
+
+THE EPISODE TRAP: Firebase returns episodes either as an ARRAY (possibly with
+null holes) or as an OBJECT keyed "0","1",... Always normalise:
+
+  function normaliseEpisodes(raw) {
+    if (!raw) return [];
+    const arr = Array.isArray(raw) ? raw.filter(Boolean) : Object.values(raw);
+    return arr.map((ep, i) => ({
+      episodeNumber: ep.episodeNumber != null ? Number(ep.episodeNumber) : i + 1,
+      title: ep.title || `Episode ${i + 1}`,
+      streamlink: ep.streamlink || ep.videoUrl || "",
+      season: Number(ep.season || 1),
+    })).sort((a,b) => a.season - b.season || a.episodeNumber - b.episodeNumber);
+  }
+
+Seasons list:  [...new Set(episodes.map(e => e.season))].sort()
+Episodes of a season:  episodes.filter(e => e.season === activeSeason)
+Total episode count (poster badge):  episodes.length
+Seasons count: item.seasons ?? number of distinct seasons
+
+Playing an episode: use that episode's streamlink. Deep link pattern used by
+the website: /play/{id}?type=series&ep={episodeNumber} — keep the same
+parameters in the mobile route so links work in both.
+
+================================================================================
+13. MUSIC, ANIMATION, ORIGINALS
+================================================================================
+Same pattern, different nodes:
+  music/{id}      -> title, artist, image, videoUrl, year   (Music screen)
+  animation/{id}  -> title, image, rating, year, genre, videoUrl, episodes
+  originals/{id}  -> same shape as movies; open with type=original
+When opening the Play screen choose the node from the type:
+  type "series" -> "series", type "original" -> "originals", else "movies".
+
+================================================================================
+14. HOME PAGE ASSEMBLY
+================================================================================
+1. HERO CAROOUSEL: read "carousel", show image + title + subtitle, auto-scroll,
+   tap opens the referenced content (type field decides movie/series).
+2. SUPPORT STRIP: a tap-to-call row between the carousel and the categories:
+   tel:+256773566069 ("Call for support").
+3. CATEGORIES ROW: derive from the distinct category values in movies+series,
+   plus "All". Selecting one filters the grid.
+4. GRID: merge movies (type "movie") and series (type "series"), drop
+   isAgent items, then apply:
+     - category filter: item.category === selected
+     - filter tabs: home / movies / series / trending / new
+     - search: title contains the query, case-insensitive
+     - sort: createdAt/updatedAt descending (newest first)
+     - pagination: 8 items per page, "Load more" appends the next 8.
+5. NEW badge: createdAt (or updatedAt) newer than 48 hours -> "NEW".
+6. Tapping a card:
+     not signed in       -> open the login sheet
+     no active plan      -> open the subscription sheet
+     otherwise           -> increment content_views and open Play.
+
+================================================================================
+15. TRENDING, COMPLETED, NEW BADGES
+================================================================================
+COUNTING VIEWS (any signed-in user, atomic):
+  import { runTransaction } from "firebase/database";
+  await runTransaction(ref(database, `content_views/${contentId}`),
+                       cur => (cur || 0) + 1);
+
+TRENDING SET:
+  read content_views once (public read), then
+  const top = Object.entries(views)
+    .filter(([,n]) => Number(n) >= 3)
+    .sort((a,b) => b[1]-a[1])
+    .slice(0,5)
+    .map(([id]) => id);
+  item is trending if top.includes(item.id) OR item.isTrending === true.
+Show a pulsing flame "TRENDING" chip on the poster.
+
+COMPLETED: series with isCompleted === true show a "COMPLETED" label directly
+BELOW the season/episode badge on the poster.
+
+NEW: createdAt within the last 2 days, or isRecentlyAdded === true.
+
+================================================================================
+16. PLAY SCREEN — GATING, STREAMING, DOWNLOADS
+================================================================================
+Order of checks when the screen opens:
+  1. no user            -> go to Login
+  2. not admin AND not hasActiveSubscription -> go to Subscribe
+  3. item.isAgent === true AND not agent subscriber AND not admin
+                        -> show the Agent plan upsell instead of the player
+  4. otherwise load the content from its node and play.
+
+Stream URL: movies -> streamlink (fallback videoUrl); series -> the selected
+episode's streamlink. Use ExoPlayer (Android) / AVPlayer (iOS) /
+video_player or better_player (Flutter). Nothing about the URL is secret to the
+player — the gate is the subscription check in the app.
+
+DOWNLOAD: same URL saved to device storage. Download limits (client-side,
+stored locally under key "download_tracker_v2"):
+  - plan "12hr": 10 downloads total for the period; already-downloaded items
+    can be re-downloaded free of charge
+  - every other plan: unlimited
+Track { planId, subscriptionStart, downloads: [contentIds], daily: {} } and
+reset it whenever planId changes.
+
+Also on this screen: rating, year, category/genre, description, share link, and
+a "Related" row (same category or genre, excluding the current item).
+
+================================================================================
+17. CONTINUE WATCHING / WATCH HISTORY
+================================================================================
+While playing, every ~10 seconds and on exit:
+  await set(ref(database, `continueWatching/${uid}/${contentId}`), {
+    contentId, title, image,
+    progress: Math.round(position / duration * 100),   // 0-100
+    contentType: "movie" | "series",
+    streamlink,
+    lastWatched: Date.now(),
+  });
+Same object shape (with videoUrl/type instead) may be mirrored to
+watchHistory/{uid}/{contentId} for a full history screen.
+
+Reading the row for the home screen:
+  onValue(ref(database, `continueWatching/${uid}`), snap => {
+    const list = Object.values(snap.val() || {})
+      .filter(i => i.progress > 2 && i.progress < 95)
+      .sort((a,b) => b.lastWatched - a.lastWatched);
+  });
+Remove finished/dismissed items:
+  await remove(ref(database, `continueWatching/${uid}/${contentId}`));
+
+================================================================================
+18. NOTIFICATIONS AND NEW-CONTENT TOASTS
+================================================================================
+BROADCAST (admin writes to notifications):
+  await push(ref(database, "notifications"), {
+    title, message, image, link, type: "info",
+    timestamp: new Date().toISOString(),
+  });
+App reads notifications (signed-in), sorts by timestamp desc, hides entries
+whose expiresAt has passed, and marks read per user:
+  await set(ref(database, `notifications/${id}/readBy/${uid}`), true);
+Unread count = notifications where readBy/{uid} is missing.
+
+PER-USER: user_notifications/{uid}/{id} — same fields plus read: boolean.
+The user may write their own subtree, so mark read with
+  update(ref(database, `user_notifications/${uid}/${id}`), { read: true });
+
+CONTENT UPDATES: whenever admin adds/edits content, push to content_updates
+  { type: "movie", contentId, title, image, message, createdAt: ISO }
+The app listens with limitToLast(5) and shows a small "New on LUO CINEMA"
+toast for entries created after the user's last seen timestamp (store that
+timestamp locally).
+
+================================================================================
+19. PUSH NOTIFICATIONS FOR THE MOBILE APP
+================================================================================
+On login, after FCM permission is granted:
+  const token = await FirebaseMessaging.getToken();
+  await set(ref(database, `fcm_tokens/${uid}/${deviceId}`), {
+    token, platform: "android" | "ios",
+    updatedAt: new Date().toISOString(),
+  });
+  // or push_subscriptions/{uid}/{deviceId} with { token, userAgent, platform,
+  //    createdAt, lastSeen }
+Remove the token on sign-out. Send campaigns from the Firebase console
+(Messaging) or from a server using the stored tokens. Only the owner and the
+admin can read these nodes.
+
+================================================================================
+20. ACTIVITY TRACKING AND ANALYTICS
+================================================================================
+Every screen open / navigation (any signed-in user may write, admin reads):
+  await push(ref(database, "navigation_activity"), {
+    userId: uid, email, section: "movies", path: "/movies",
+    timestamp: new Date().toISOString(),
+  });
+Actions (play, download, subscribe attempt, login):
+  await push(ref(database, "user_activity"), {
+    userId: uid, type: "play", details: { contentId, title },
+    timestamp: new Date().toISOString(),
+  });
+Both are indexed on timestamp/userId, so the admin screen can query:
+  query(ref(database, "navigation_activity"), orderByChild("timestamp"),
+        limitToLast(200))
+Free-form counters can go under analytics/.
+
+================================================================================
+21. WALLET & TRANSACTIONS (ADMIN)
+================================================================================
+Live float from the payment backend: GET /api/wallet/balance.
+Backend history: GET /api/transactions.
+In-app record of every attempt: the transactions node (section 7), which the
+admin screen lists newest-first with status colouring and can cross-check with
+the backend by internal_reference.
+Payouts to a phone: POST /api/withdraw { msisdn, amount, description } — admin
+only; mirror the result into wallet/transactions/{txId}
+  { type: "withdraw", amount, timestamp: Date.now(), msisdn, status }.
+
+================================================================================
+22. ADMIN DASHBOARD — SCREENS AND WRITES
+================================================================================
+Gate: email must be arthurdimpoz@gmail.com AND the code at
+adminSettings/password must be entered. Changing the code:
+  await set(ref(database, "adminSettings/password"), newCode);   // min 4 chars
+
+ Movies         push/update/remove movies/{id}
+ Series         push/update/remove series/{id} (episodes, seasons, isCompleted)
+ Music          push/update/remove music/{id}
+ Animation      push/update/remove animation/{id}
+ Carousel       push/update/remove carousel/{id}
+ Plans          set/remove subscription_plans/{id} (price, days, isAgent, order)
+ Agent content  toggle isAgent on movies/series (hold back or release)
+ Agents         list/delete agent_profiles/{uid}
+ Users          read users, see phoneNumber, set subscriptions/{uid} manually
+ Activity       read navigation_activity / user_activity / transactions
+ Wallet         balance, backend transactions, withdraw
+ Notifications  push notifications / user_notifications
+Right-click / long-press context menus are disabled for everyone except admin.
+
+================================================================================
+23. CONTENT UPLOAD — EXACT OBJECTS TO WRITE
+================================================================================
+ADD A MOVIE (push -> auto id):
+  await push(ref(database, "movies"), {
+    title, image, rating: Number(rating), year: Number(year),
+    category, genre, streamlink,
+    isTrending: false, isRecentlyAdded: true, isAgent: true,   // agent first
+    createdAt: new Date().toISOString(),
+  });
+EDIT: update(ref(database, `movies/${id}`), { ...fields, updatedAt: ISO })
+DELETE: remove(ref(database, `movies/${id}`))
+
+ADD A SERIES:
+  await push(ref(database, "series"), {
+    title, image, rating: Number(rating), year: Number(year),
+    category, seasons: Number(seasons), isCompleted: false,
+    isRecentlyAdded: true, isAgent: true,
+    episodes: [
+      { episodeNumber: 1, title: "Episode 1", streamlink: "...", season: 1 },
+      { episodeNumber: 2, title: "Episode 2", streamlink: "...", season: 1 },
+    ],
+    createdAt: new Date().toISOString(),
+  });
+Required fields are enforced by the rules: movies need title/image/rating/year;
+series additionally need episodes; music needs title/image/artist; carousel
+needs title/subtitle/image. rating must be 0-10 and a NUMBER, year 1900-2100
+and a NUMBER — sending them as strings fails validation.
+
+Images: either paste a hosted URL, or upload to Firebase Storage and store the
+download URL in image.
+
+================================================================================
+24. MOBILE APP CHECKLIST
+================================================================================
+Screens: Splash -> Login/Register -> Phone gate -> Home (carousel, support,
+categories, grid, continue watching) -> Search -> Movies -> Series -> Music ->
+Animation -> Agent Zone -> Play -> Subscribe (plans -> phone -> processing ->
+success/failed) -> Notifications -> Settings (phone, theme, logout) -> Admin.
+
+State to keep globally: user, isAdmin, subscription + hasActiveSubscription +
+isAgentSubscriber, plans list, unread notification count.
+
+Build order that works:
+ 1. Firebase Auth + users/{uid} write
+ 2. Phone gate
+ 3. Content lists (movies/series) with agent filtering
+ 4. Play screen with the subscription gate
+ 5. Plans from subscription_plans + the payment flow
+ 6. Continue watching, trending, notifications
+ 7. Admin screens
+ 8. Publish database.rules.json and test with a non-admin account
+
+================================================================================
+25. COMMON ERRORS AND HOW TO AVOID THEM
+================================================================================
+PERMISSION_DENIED writing agent profiles / views / plans
+   -> the rules in database.rules.json were never published. Publish them.
+Poster shows but nothing plays
+   -> streamlink empty, or the item is a series and you used the top-level
+      streamlink instead of the episode's.
+Episodes missing or shifted
+   -> you did not normalise the array/object shape (section 12).
+Subscription still "active" after it ended
+   -> always compare endDate with now; nothing flips active server-side.
+Payment always fails with INVALID_IP
+   -> Relworx whitelist on the payment server, not the app.
+"Payment Failed / Try again" straight away
+   -> msisdn was not normalised (e.g. "+256256770...") or the amount was sent
+      as a string. Normalise once, send a Number.
+Country code doubled
+   -> only prepend 256 when the number is a 10-digit 0-prefixed or 9-digit
+      7-prefixed local number.
+User node loses fields after login
+   -> set() replaces; carry createdAt/phoneNumber over or use update().
+rating/year rejected
+   -> they must be numbers, within the validated ranges.
+Agent content visible to everyone
+   -> the normal listings forgot `.filter(i => i.isAgent !== true)`.
+
+================================================================================
+END OF FILE
+================================================================================
