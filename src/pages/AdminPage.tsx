@@ -139,6 +139,8 @@ export default function AdminPage() {
     { label: "Wallet", icon: Wallet, href: "/admin/wallet", desc: "View balance & withdraw" },
     { label: "Activity", icon: Activity, href: "/admin/activity", desc: "Real-time analytics & activity" },
     { label: "Agents", icon: Sparkles, href: "/admin/agents", desc: "Agent of the Week submissions" },
+    { label: "Plans & Pricing", icon: Wallet, href: "/admin/plans", desc: "Change plan prices and durations" },
+    { label: "Agent Zone", icon: Sparkles, href: "/admin/agent-content", desc: "Move titles between Agent and normal plans" },
   ];
 
   return (

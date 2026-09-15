@@ -22,6 +22,9 @@ import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminWalletPage from "./pages/AdminWalletPage";
 import AdminActivityPage from "./pages/AdminActivityPage";
 import AdminAgentsPage from "./pages/AdminAgentsPage";
+import AdminPlansPage from "./pages/AdminPlansPage";
+import AdminAgentContentPage from "./pages/AdminAgentContentPage";
+import AgentPage from "./pages/AgentPage";
 import RouteTracker from "./components/RouteTracker";
 import PhoneNumberGate from "./components/PhoneNumberGate";
 
@@ -57,6 +60,9 @@ const App = () => (
               <Route path="/admin/wallet" element={<AdminWalletPage />} />
               <Route path="/admin/activity" element={<AdminActivityPage />} />
               <Route path="/admin/agents" element={<AdminAgentsPage />} />
+              <Route path="/admin/plans" element={<AdminPlansPage />} />
+              <Route path="/admin/agent-content" element={<AdminAgentContentPage />} />
+              <Route path="/agent" element={<AgentPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </SubscriptionProvider>

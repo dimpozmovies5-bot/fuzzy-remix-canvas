@@ -33,6 +33,7 @@ interface Movie {
   episodes?: Episode[];
   seasons?: number;
   isCompleted?: boolean;
+  isAgentOnly?: boolean;
 }
 
 interface PopularGridProps {
@@ -62,7 +63,7 @@ export default function PopularGrid({
 
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
-  const { hasActiveSubscription } = useSubscription();
+  const { hasActiveSubscription, isAgentSubscriber } = useSubscription();
 
   useEffect(() => {
     const unsub = onValue(ref(database, "content_views"), (snap) => {
@@ -226,10 +227,15 @@ export default function PopularGrid({
   };
 
 
+  // Agent-only titles live in the Agent Zone until the admin releases them
+  const visibleMovies = isAdmin || isAgentSubscriber
+    ? movies
+    : movies.filter((m) => m.isAgentOnly !== true);
+
   // Apply category filter
   const filteredMovies = categoryFilter === "all"
-    ? movies
-    : movies.filter((m) =>
+    ? visibleMovies
+    : visibleMovies.filter((m) =>
         m.category?.toLowerCase() === categoryFilter.toLowerCase() ||
         m.genre?.toLowerCase().includes(categoryFilter.toLowerCase())
       );

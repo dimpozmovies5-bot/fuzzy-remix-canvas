@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Check, Loader2, Phone, Crown, Zap, Star, Clock, Calendar } from "lucide-react";
-import { SUBSCRIPTION_PLANS, type SubscriptionPlan } from "@/lib/subscription-context";
-import { useSubscription } from "@/lib/subscription-context";
+import { type SubscriptionPlan, useSubscription } from "@/lib/subscription-context";
+
 import { useAuth } from "@/lib/auth-context";
 import { requestPayment, checkRequestStatus, validatePhone } from "@/lib/payment-api";
 
@@ -52,8 +52,6 @@ const FEATURES = [
   "Access to all TV series",
   "Early access to new releases",
 ];
-
-const VISIBLE_PLANS = SUBSCRIPTION_PLANS;
 
 export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModalProps) {
   const { user } = useAuth();
@@ -305,6 +303,7 @@ export default function SubscriptionModal({ isOpen, onClose }: SubscriptionModal
 }
 
 function PlansView({ onClose, onSelect }: { onClose: () => void; onSelect: (p: SubscriptionPlan) => void }) {
+  const { plans } = useSubscription();
   return (
     <div className="relative">
       <div className="px-6 pt-7 pb-4 text-center relative">
@@ -330,7 +329,7 @@ function PlansView({ onClose, onSelect }: { onClose: () => void; onSelect: (p: S
       <div className="mx-6 border-t border-white/10" />
 
       <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {VISIBLE_PLANS.map((plan) => {
+        {plans.map((plan) => {
           const isPopular = plan.id === "1week";
           const Icon = PLAN_ICONS[plan.id] || Star;
           return (
