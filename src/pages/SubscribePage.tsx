@@ -1,5 +1,5 @@
 import { Check, X, Clock, Zap, Star, Crown, Loader2, Phone, Calendar } from "lucide-react";
-import { SUBSCRIPTION_PLANS, type SubscriptionPlan, useSubscription } from "@/lib/subscription-context";
+import { type SubscriptionPlan, useSubscription } from "@/lib/subscription-context";
 import { useNavigate } from "react-router-dom";
 import { useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -36,14 +36,12 @@ const FEATURES = [
   "Early access to new releases",
 ];
 
-const VISIBLE_PLANS = SUBSCRIPTION_PLANS;
-
 type Step = "plans" | "phone" | "processing" | "success" | "failed";
 
 export default function SubscribePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { refreshSubscription } = useSubscription();
+  const { refreshSubscription, plans } = useSubscription();
   const [step, setStep] = useState<Step>("plans");
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [phone, setPhone] = useState("");
@@ -155,7 +153,7 @@ export default function SubscribePage() {
             <div className="mx-6 border-t border-white/10" />
 
             <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {VISIBLE_PLANS.map((plan) => {
+              {plans.map((plan) => {
                 const isPopular = plan.id === "1week";
                 const Icon = PLAN_ICONS[plan.id] || Star;
                 return (
