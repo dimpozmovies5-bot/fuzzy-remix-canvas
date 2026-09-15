@@ -57,13 +57,13 @@ const Index = () => {
               </a>
               <Link
                 to="/agent"
-                className="flex items-center justify-between gap-2 w-full py-2.5 px-4 rounded-xl text-sm font-semibold border border-primary/40 bg-primary/10 text-foreground hover:bg-primary/20 transition"
+                className="relative flex items-center justify-between gap-2 w-full py-3 px-4 rounded-xl text-sm font-bold border border-amber-400/60 bg-gradient-to-r from-amber-500/25 via-amber-600/15 to-orange-600/20 text-amber-200 hover:brightness-110 transition agent-glow"
               >
                 <span className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
+                  <Sparkles className="w-4 h-4 text-amber-400" />
                   Agent Zone — new titles first
                 </span>
-                <span className="text-xs text-primary">Open →</span>
+                <span className="text-xs font-bold text-amber-300">Open →</span>
               </Link>
               <SubscriberStatusBanner onUpgrade={() => setShowSubscriptionModal(true)} />
               <CategoriesRow
