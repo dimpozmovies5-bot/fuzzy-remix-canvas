@@ -1,4 +1,4 @@
-import { Check, X, Clock, Zap, Star, Crown, Loader2, Phone, Calendar } from "lucide-react";
+import { Check, X, Clock, Zap, Star, Crown, Loader2, Phone, Calendar, Sparkles } from "lucide-react";
 import { type SubscriptionPlan, useSubscription } from "@/lib/subscription-context";
 import { serverDate, serverIso } from "@/lib/server-time";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -37,6 +37,11 @@ const FEATURES = [
   "Early access to new releases",
 ];
 
+const RAINBOW_CONIC =
+  "conic-gradient(from 180deg at 50% 50%, #ff2e63, #ff8a3d, #ffe66d, #7cff6b, #4de0ff, #6b6bff, #d16bff, #ff2e63)";
+const GOLD_CONIC =
+  "conic-gradient(from 180deg at 50% 50%, #fbbf24, #f97316, #fde68a, #f59e0b, #fb923c, #fcd34d, #fbbf24)";
+
 type Step = "plans" | "phone" | "processing" | "success" | "failed";
 
 export default function SubscribePage() {
@@ -61,6 +66,9 @@ export default function SubscribePage() {
       setStep("phone");
     }
   }, [searchParams, allPlans, selectedPlan]);
+
+  // Agent Zone flow gets the same amber/gold treatment as the "Become an Agent" button.
+  const agentMode = !!selectedPlan?.isAgent;
 
   const stopPolling = () => {
     if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
@@ -138,9 +146,25 @@ export default function SubscribePage() {
     await refreshSubscription();
   };
 
+  const backToStart = () => {
+    if (agentMode) {
+      setSelectedPlan(null);
+      navigate("/agent");
+      return;
+    }
+    setSelectedPlan(null);
+    setStep("plans");
+  };
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="relative w-full max-w-[560px] rounded-3xl bg-card border border-white/10 shadow-2xl overflow-hidden">
+    <div className={`min-h-screen bg-background flex items-center justify-center p-4 ${agentMode ? "agent-zone-bg" : ""}`}>
+      <div
+        className={`relative w-full max-w-[560px] rounded-3xl border overflow-hidden shadow-2xl ${
+          agentMode
+            ? "border-amber-400/60 bg-gradient-to-br from-amber-950/50 via-card to-card agent-glow"
+            : "border-white/10 bg-card"
+        }`}
+      >
         {step === "plans" && (
           <div>
             <div className="px-6 pt-7 pb-4 text-center relative">
@@ -157,7 +181,7 @@ export default function SubscribePage() {
             <div className="px-6 pb-5 grid grid-cols-2 gap-x-6 gap-y-3">
               {FEATURES.map((f) => (
                 <div key={f} className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" strokeWidth={3} />
+                  <Check className={`w-4 h-4 shrink-0 mt-0.5 ${agentMode ? "text-amber-400" : "text-primary"}`} strokeWidth={3} />
                   <span className="text-white text-sm font-medium leading-tight">{f}</span>
                 </div>
               ))}
@@ -184,13 +208,10 @@ export default function SubscribePage() {
                     )}
                     <div
                       className="rounded-2xl p-[2px] transition-transform duration-300 group-hover:scale-[1.03] group-active:scale-[0.98]"
-                      style={{
-                        background:
-                          "conic-gradient(from 180deg at 50% 50%, #ff2e63, #ff8a3d, #ffe66d, #7cff6b, #4de0ff, #6b6bff, #d16bff, #ff2e63)",
-                      }}
+                      style={{ background: agentMode ? GOLD_CONIC : RAINBOW_CONIC }}
                     >
                       <div className="rounded-[14px] bg-background py-5 px-3 flex flex-col items-center gap-2">
-                        <Icon className="w-6 h-6 text-primary" strokeWidth={2} />
+                        <Icon className={`w-6 h-6 ${agentMode ? "text-amber-400" : "text-primary"}`} strokeWidth={2} />
                         <span className="text-white/60 text-xs font-medium">{plan.duration}</span>
                         <div className="text-white text-lg font-black tracking-tight">
                           UGX {plan.price.toLocaleString()}
@@ -212,12 +233,29 @@ export default function SubscribePage() {
 
         {step === "phone" && selectedPlan && (
           <div className="p-6 sm:p-8 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/40">
-              <Phone className="w-7 h-7 text-primary-foreground" />
+            <div
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg ${
+                agentMode
+                  ? "bg-gradient-to-r from-amber-400 to-orange-500 text-amber-950 shadow-amber-500/40"
+                  : "bg-primary text-primary-foreground shadow-primary/40"
+              }`}
+            >
+              <Phone className="w-7 h-7" />
             </div>
+
+            {agentMode && (
+              <div className="inline-flex items-center gap-1.5 mb-2 px-3 py-1 rounded-full border border-amber-400/60 bg-amber-400/10">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">Agent Zone</span>
+              </div>
+            )}
+
             <h2 className="text-lg font-extrabold text-white mb-1">Enter Phone Number</h2>
             <p className="text-white/60 text-xs mb-1">
-              {selectedPlan.name} — <span className="font-bold text-white">UGX {selectedPlan.price.toLocaleString()}</span>
+              {selectedPlan.name} —{" "}
+              <span className={`font-bold text-white ${agentMode ? "text-amber-300" : ""}`}>
+                UGX {selectedPlan.price.toLocaleString()}
+              </span>
             </p>
             <p className="text-[10px] text-white/50 mb-5">You'll receive a payment prompt on your phone</p>
             <div className="max-w-sm mx-auto space-y-3">
@@ -228,18 +266,27 @@ export default function SubscribePage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="0770123456"
-                  className="w-full pl-10 pr-4 py-3 bg-white/5 border-2 border-white/10 rounded-xl text-white text-sm font-medium focus:outline-none focus:border-primary transition placeholder:text-white/30"
+                  className={`w-full pl-10 pr-4 py-3 bg-white/5 border-2 rounded-xl text-white text-sm font-medium focus:outline-none transition placeholder:text-white/30 ${
+                    agentMode ? "border-amber-400/30 focus:border-amber-400" : "border-white/10 focus:border-primary"
+                  }`}
                 />
               </div>
               <button
                 onClick={handlePay}
                 disabled={!normalizeUgandanMsisdn(phone)}
-                className="w-full py-3 bg-primary hover:opacity-90 disabled:opacity-40 rounded-xl text-primary-foreground text-sm font-bold transition shadow-md shadow-primary/30"
+                className={`w-full py-3 rounded-xl text-sm font-bold transition disabled:opacity-40 ${
+                  agentMode
+                    ? "bg-gradient-to-r from-amber-400 to-orange-500 text-amber-950 shadow-lg shadow-amber-500/30 hover:brightness-110"
+                    : "bg-primary text-primary-foreground shadow-md shadow-primary/30 hover:opacity-90"
+                }`}
               >
                 Pay UGX {selectedPlan.price.toLocaleString()}
               </button>
-              <button onClick={() => setStep("plans")} className="w-full text-white/60 text-xs hover:text-white transition">
-                ← Choose different plan
+              <button
+                onClick={backToStart}
+                className="w-full text-white/60 text-xs hover:text-white transition"
+              >
+                {agentMode ? "← Back to Agent Zone" : "← Choose different plan"}
               </button>
             </div>
           </div>
@@ -248,9 +295,17 @@ export default function SubscribePage() {
         {step === "processing" && (
           <div className="p-10 text-center">
             <div className="relative w-16 h-16 mx-auto mb-5">
-              <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
-              <div className="relative w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <div
+                className={`absolute inset-0 rounded-full animate-ping ${
+                  agentMode ? "bg-amber-400/20" : "bg-primary/20"
+                }`}
+              />
+              <div
+                className={`relative w-16 h-16 rounded-full flex items-center justify-center ${
+                  agentMode ? "bg-amber-400/10" : "bg-primary/10"
+                }`}
+              >
+                <Loader2 className={`w-8 h-8 animate-spin ${agentMode ? "text-amber-400" : "text-primary"}`} />
               </div>
             </div>
             <h2 className="text-lg font-extrabold text-white mb-1">Processing Payment</h2>
@@ -260,13 +315,30 @@ export default function SubscribePage() {
 
         {step === "success" && (
           <div className="p-10 text-center">
-            <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center mx-auto mb-4">
-              <Check className="w-6 h-6 text-green-500" />
+            <div
+              className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                agentMode ? "bg-amber-400/15" : "bg-green-500/15"
+              }`}
+            >
+              <Check className={`w-6 h-6 ${agentMode ? "text-amber-400" : "text-green-500"}`} />
             </div>
-            <h2 className="text-lg font-extrabold text-white mb-1">You're All Set! 🎉</h2>
-            <p className="text-white/60 text-xs mb-5">Enjoy unlimited streaming on LUO CINEMA</p>
-            <button onClick={() => navigate("/")} className="px-8 py-2.5 bg-primary rounded-xl text-primary-foreground text-sm font-bold shadow-md hover:opacity-90 transition">
-              Start Watching
+            <h2 className="text-lg font-extrabold text-white mb-1">
+              {agentMode ? "You're an Agent! 🎉" : "You're All Set! 🎉"}
+            </h2>
+            <p className="text-white/60 text-xs mb-5">
+              {agentMode
+                ? "Enjoy early access to everything in the Agent Zone"
+                : "Enjoy unlimited streaming on LUO CINEMA"}
+            </p>
+            <button
+              onClick={() => navigate(agentMode ? "/agent" : "/")}
+              className={`px-8 py-2.5 rounded-xl text-sm font-bold shadow-md transition ${
+                agentMode
+                  ? "bg-gradient-to-r from-amber-400 to-orange-500 text-amber-950 shadow-amber-500/30 hover:brightness-110"
+                  : "bg-primary text-primary-foreground hover:opacity-90"
+              }`}
+            >
+              {agentMode ? "Open Agent Zone" : "Start Watching"}
             </button>
           </div>
         )}
@@ -278,7 +350,14 @@ export default function SubscribePage() {
             </div>
             <h2 className="text-lg font-extrabold text-white mb-1">Payment Failed</h2>
             <p className="text-white/60 text-xs mb-5">{statusMsg}</p>
-            <button onClick={() => setStep("plans")} className="px-8 py-2.5 bg-primary rounded-xl text-primary-foreground text-sm font-bold shadow-md hover:opacity-90 transition">
+            <button
+              onClick={() => (agentMode ? setStep("phone") : backToStart())}
+              className={`px-8 py-2.5 rounded-xl text-sm font-bold shadow-md transition ${
+                agentMode
+                  ? "bg-gradient-to-r from-amber-400 to-orange-500 text-amber-950 shadow-amber-500/30 hover:brightness-110"
+                  : "bg-primary text-primary-foreground hover:opacity-90"
+              }`}
+            >
               Try Again
             </button>
           </div>
