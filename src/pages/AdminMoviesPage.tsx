@@ -18,6 +18,7 @@ interface Movie {
   genre?: string;
   isTrending?: boolean;
   isRecentlyAdded?: boolean;
+  isAgentOnly?: boolean;
 }
 
 const CATEGORIES = ["Action", "Adventure", "Comedy", "Drama", "Horror", "Romance", "Sci-Fi", "Thriller", "Fantasy", "Western", "Documentary", "Nigerian", "Ugandan", "Bongo", "Ghanaian", "Animation", "Music", "Special"];
@@ -28,7 +29,7 @@ export default function AdminMoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [newMovie, setNewMovie] = useState({
     title: "", image: "", rating: 7.5, year: new Date().getFullYear(),
-    category: "Action", streamlink: "", genre: "", isTrending: false, isRecentlyAdded: false,
+    category: "Action", streamlink: "", genre: "", isTrending: false, isRecentlyAdded: false, isAgentOnly: false,
   });
   const [uploading, setUploading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -69,6 +70,7 @@ export default function AdminMoviesPage() {
         category: newMovie.category, streamlink: newMovie.streamlink,
         genre: newMovie.genre, isTrending: newMovie.isTrending,
         isRecentlyAdded: newMovie.isRecentlyAdded,
+        isAgentOnly: newMovie.isAgentOnly,
         ...(editingMovie ? { updatedAt: new Date().toISOString() } : { createdAt: new Date().toISOString() }),
       };
 
@@ -82,7 +84,7 @@ export default function AdminMoviesPage() {
       }
 
       setTimeout(() => setSuccessMessage(""), 3000);
-      setNewMovie({ title: "", image: "", rating: 7.5, year: new Date().getFullYear(), category: "Action", streamlink: "", genre: "", isTrending: false, isRecentlyAdded: false });
+      setNewMovie({ title: "", image: "", rating: 7.5, year: new Date().getFullYear(), category: "Action", streamlink: "", genre: "", isTrending: false, isRecentlyAdded: false, isAgentOnly: false });
       loadMovies();
     } catch (error) {
       console.error("Error:", error);
@@ -99,6 +101,7 @@ export default function AdminMoviesPage() {
       year: movie.year, category: movie.category, streamlink: movie.streamlink,
       genre: movie.genre || "", isTrending: movie.isTrending || false,
       isRecentlyAdded: movie.isRecentlyAdded || false,
+      isAgentOnly: movie.isAgentOnly || false,
     });
   };
 
@@ -166,6 +169,10 @@ export default function AdminMoviesPage() {
                 <input type="checkbox" checked={newMovie.isRecentlyAdded} onChange={(e) => setNewMovie({ ...newMovie, isRecentlyAdded: e.target.checked })} />
                 Recently Added
               </label>
+              <label className="flex items-center gap-2 text-sm text-amber-400 font-semibold">
+                <input type="checkbox" checked={newMovie.isAgentOnly} onChange={(e) => setNewMovie({ ...newMovie, isAgentOnly: e.target.checked })} />
+                Agent only (Agent Zone)
+              </label>
             </div>
 
             <div className="flex gap-3">
@@ -173,7 +180,7 @@ export default function AdminMoviesPage() {
                 {uploading ? "Saving..." : editingMovie ? "Update Movie" : "Add Movie"}
               </Button>
               {editingMovie && (
-                <Button type="button" variant="outline" onClick={() => { setEditingMovie(null); setNewMovie({ title: "", image: "", rating: 7.5, year: new Date().getFullYear(), category: "Action", streamlink: "", genre: "", isTrending: false, isRecentlyAdded: false }); }}>
+                <Button type="button" variant="outline" onClick={() => { setEditingMovie(null); setNewMovie({ title: "", image: "", rating: 7.5, year: new Date().getFullYear(), category: "Action", streamlink: "", genre: "", isTrending: false, isRecentlyAdded: false, isAgentOnly: false }); }}>
                   Cancel
                 </Button>
               )}
@@ -187,7 +194,7 @@ export default function AdminMoviesPage() {
               <img src={movie.image || "/placeholder.svg"} alt={movie.title} className="w-12 h-12 rounded object-cover" />
               <div className="flex-1 min-w-0">
                 <p className="text-foreground text-sm font-medium truncate">{movie.title}</p>
-                <p className="text-muted-foreground text-xs">{movie.category} · {movie.year} · ⭐ {movie.rating}</p>
+                <p className="text-muted-foreground text-xs">{movie.category} · {movie.year} · ⭐ {movie.rating}{movie.isAgentOnly ? " · Agent only" : ""}</p>
               </div>
               <div className="flex gap-1">
                 <Button size="sm" onClick={() => handleEdit(movie)} className="h-7 text-xs bg-primary/20 text-primary hover:bg-primary/30">Edit</Button>
