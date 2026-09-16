@@ -1,8 +1,8 @@
 import { Check, X, Clock, Zap, Star, Crown, Loader2, Phone, Calendar } from "lucide-react";
 import { type SubscriptionPlan, useSubscription } from "@/lib/subscription-context";
 import { serverDate, serverIso } from "@/lib/server-time";
-import { useNavigate } from "react-router-dom";
-import { useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { requestPayment, checkRequestStatus } from "@/lib/payment-api";
 import { database } from "@/lib/firebase";
@@ -41,14 +41,26 @@ type Step = "plans" | "phone" | "processing" | "success" | "failed";
 
 export default function SubscribePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { refreshSubscription, normalPlans: plans } = useSubscription();
+  const { refreshSubscription, normalPlans: plans, plans: allPlans } = useSubscription();
   const [step, setStep] = useState<Step>("plans");
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [phone, setPhone] = useState("");
   const [statusMsg, setStatusMsg] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const internalRefRef = useRef<string>("");
+
+  // Deep link: /subscribe?plan=agent (or any plan id) jumps straight to that plan's payment step.
+  useEffect(() => {
+    const wanted = searchParams.get("plan");
+    if (!wanted || selectedPlan) return;
+    const match = allPlans.find((p) => p.id === wanted || (wanted === "agent" && p.isAgent));
+    if (match) {
+      setSelectedPlan(match);
+      setStep("phone");
+    }
+  }, [searchParams, allPlans, selectedPlan]);
 
   const stopPolling = () => {
     if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
