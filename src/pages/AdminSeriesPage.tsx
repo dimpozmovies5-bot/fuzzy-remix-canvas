@@ -13,6 +13,7 @@ interface Episode {
   title: string;
   streamlink: string;
   season?: number;
+  image?: string;
 }
 
 interface Series {
@@ -26,6 +27,7 @@ interface Series {
   seasons?: number;
   isRecentlyAdded?: boolean;
   isCompleted?: boolean;
+  isAgentOnly?: boolean;
 }
 
 const CATEGORIES = ["Action", "Comedy", "Drama", "Horror", "Romance", "Sci-Fi", "Thriller", "Fantasy", "Western", "Documentary", "Nigerian", "Ugandan", "Bongo", "Ghanaian", "Animation", "Special"];
@@ -33,9 +35,10 @@ const CATEGORIES = ["Action", "Comedy", "Drama", "Horror", "Romance", "Sci-Fi", 
 const defaultForm = () => ({
   title: "", image: "", rating: 7.5, year: new Date().getFullYear(),
   category: "Action", seasons: 1,
-  episodes: [{ episodeNumber: 1, title: "", streamlink: "", season: 1 }] as Episode[],
+  episodes: [{ episodeNumber: 1, title: "", streamlink: "", season: 1, image: "" }] as Episode[],
   isRecentlyAdded: false,
   isCompleted: false,
+  isAgentOnly: false,
 });
 
 export default function AdminSeriesPage() {
@@ -160,6 +163,7 @@ export default function AdminSeriesPage() {
         rating: Number(newSeries.rating), year: newSeries.year,
         category: newSeries.category, seasons: newSeries.seasons,
         episodes: newSeries.episodes, isRecentlyAdded: newSeries.isRecentlyAdded, isCompleted: newSeries.isCompleted,
+        isAgentOnly: newSeries.isAgentOnly,
         ...(editingSeries ? { updatedAt: new Date().toISOString() } : { createdAt: new Date().toISOString() }),
       };
 
@@ -256,6 +260,10 @@ export default function AdminSeriesPage() {
                 <input type="checkbox" checked={newSeries.isRecentlyAdded} onChange={(e) => setNewSeries({ ...newSeries, isRecentlyAdded: e.target.checked })} className="w-4 h-4 accent-primary" />
                 Recently Added
               </label>
+              <label className="flex items-center gap-2 text-sm text-amber-400 font-semibold cursor-pointer">
+                <input type="checkbox" checked={newSeries.isAgentOnly} onChange={(e) => setNewSeries({ ...newSeries, isAgentOnly: e.target.checked })} className="w-4 h-4 accent-amber-400" />
+                Agent only (Agent Zone)
+              </label>
             </div>
             </div>
 
@@ -325,9 +333,13 @@ export default function AdminSeriesPage() {
                           <label className="block text-[10px] text-muted-foreground mb-1">Title</label>
                           <Input value={ep.title} onChange={(e) => updateEpisode(globalIdx, 'title', e.target.value)} className="bg-secondary border-border text-foreground text-xs h-8" />
                         </div>
-                        <div className="col-span-6">
+                        <div className="col-span-3">
                           <label className="block text-[10px] text-muted-foreground mb-1">Stream Link</label>
                           <Input value={ep.streamlink} onChange={(e) => updateEpisode(globalIdx, 'streamlink', e.target.value)} className="bg-secondary border-border text-foreground text-xs h-8" />
+                        </div>
+                        <div className="col-span-3">
+                          <label className="block text-[10px] text-muted-foreground mb-1">Episode Poster URL</label>
+                          <Input value={ep.image || ""} onChange={(e) => updateEpisode(globalIdx, 'image', e.target.value)} className="bg-secondary border-border text-foreground text-xs h-8" placeholder="optional" />
                         </div>
                         <div className="col-span-1">
                           <Button type="button" size="sm" variant="destructive" onClick={() => handleRemoveEpisode(globalIdx)} className="h-8 w-8 p-0">
@@ -383,9 +395,10 @@ export default function AdminSeriesPage() {
                   setNewSeries({
                     title: s.title, image: s.image, rating: s.rating, year: s.year,
                     category: s.category, seasons: s.seasons || 1,
-                    episodes: (s.episodes || []).map(ep => ({ ...ep, season: ep.season || 1 })),
+                    episodes: (s.episodes || []).map(ep => ({ ...ep, season: ep.season || 1, image: ep.image || "" })),
                     isRecentlyAdded: s.isRecentlyAdded || false,
                     isCompleted: s.isCompleted || false,
+                    isAgentOnly: s.isAgentOnly || false,
                   });
                   setActiveSeason(1);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
