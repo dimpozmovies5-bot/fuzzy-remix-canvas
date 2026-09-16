@@ -128,37 +128,102 @@ export default function AgentPage() {
         {items.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-16">No early-access titles right now.</p>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-            {items.map((item) => (
-              <button key={`${item.type}-${item.id}`} onClick={() => open(item)} className="group text-left">
-                <div className="relative aspect-[2/3] rounded-xl overflow-hidden border border-amber-400/50 shadow-md shadow-amber-900/30">
-                  <img
-                    src={item.image || "/placeholder.svg"}
-                    alt={item.title}
-                    loading="lazy"
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition"
-                  />
-                  <span className="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-400 to-orange-500 text-amber-950 shadow">
-                    Agent
-                  </span>
-                  {!canWatch && (
-                    <span className="absolute inset-0 bg-background/70 flex items-center justify-center">
-                      <Lock className="w-5 h-5 text-amber-400" />
-                    </span>
-                  )}
+          <>
+            {items.filter((i) => i.type === "movie").length > 0 && (
+              <>
+                <h2 className="text-sm font-bold text-amber-300 mb-2">Movies</h2>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 mb-8">
+                  {items
+                    .filter((i) => i.type === "movie")
+                    .map((item) => (
+                      <button key={`movie-${item.id}`} onClick={() => open(item)} className="group text-left">
+                        <div className="relative aspect-[2/3] rounded-xl overflow-hidden border border-amber-400/50 shadow-md shadow-amber-900/30">
+                          <img
+                            src={item.image || "/placeholder.svg"}
+                            alt={item.title}
+                            loading="lazy"
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition"
+                          />
+                          <span className="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-400 to-orange-500 text-amber-950 shadow">
+                            Agent
+                          </span>
+                          {!canWatch && (
+                            <span className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                              <Lock className="w-5 h-5 text-amber-400" />
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-[11px] font-semibold text-foreground line-clamp-2 leading-tight">{item.title}</p>
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          {item.rating ? (
+                            <>
+                              <Star className="w-2.5 h-2.5 text-amber-400" /> {item.rating}
+                            </>
+                          ) : null}
+                          {item.year ? ` · ${item.year}` : ""}
+                        </p>
+                      </button>
+                    ))}
                 </div>
-                <p className="mt-1 text-[11px] font-semibold text-foreground line-clamp-2 leading-tight">{item.title}</p>
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  {item.rating ? (
-                    <>
-                      <Star className="w-2.5 h-2.5 text-amber-400" /> {item.rating}
-                    </>
-                  ) : null}
-                  {item.year ? ` · ${item.year}` : ""}
-                </p>
-              </button>
-            ))}
-          </div>
+              </>
+            )}
+
+            {items
+              .filter((i) => i.type === "series")
+              .map((item) => {
+                const eps = episodeList(item);
+                return (
+                  <div key={`series-${item.id}`} className="mb-8">
+                    <div className="flex items-center gap-3 mb-2">
+                      <img
+                        src={item.image || "/placeholder.svg"}
+                        alt={item.title}
+                        className="w-10 h-14 rounded-md object-cover border border-amber-400/50"
+                      />
+                      <div className="min-w-0">
+                        <h2 className="text-sm font-bold text-amber-300 truncate">{item.title}</h2>
+                        <p className="text-[10px] text-muted-foreground">
+                          {eps.length} episode{eps.length === 1 ? "" : "s"}
+                          {item.year ? ` · ${item.year}` : ""}
+                        </p>
+                      </div>
+                    </div>
+
+                    {eps.length === 0 ? (
+                      <p className="text-muted-foreground text-xs">No episodes yet.</p>
+                    ) : (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                        {eps.map((ep) => (
+                          <button
+                            key={`${item.id}-s${ep.season}e${ep.number}`}
+                            onClick={() => openEpisode(item, ep.number)}
+                            className="group text-left"
+                          >
+                            <div className="relative aspect-[2/3] rounded-xl overflow-hidden border border-amber-400/50 shadow-md shadow-amber-900/30">
+                              <img
+                                src={ep.image || "/placeholder.svg"}
+                                alt={`${item.title} — ${ep.title}`}
+                                loading="lazy"
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition"
+                              />
+                              <span className="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-400 to-orange-500 text-amber-950 shadow">
+                                S{ep.season} · EP{ep.number}
+                              </span>
+                              {!canWatch && (
+                                <span className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                                  <Lock className="w-5 h-5 text-amber-400" />
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 text-[11px] font-semibold text-foreground line-clamp-2 leading-tight">{ep.title}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </>
         )}
       </div>
     </div>
