@@ -57,7 +57,7 @@ export default function AgentPage() {
       return;
     }
     if (!canWatch) {
-      navigate("/subscribe");
+      navigate(`/subscribe?plan=${agentPlan?.id || "agent"}`);
       return;
     }
     if (item.type === "series") navigate(`/play/${item.id}?type=series&ep=1`);
