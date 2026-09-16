@@ -51,6 +51,26 @@ export default function AgentPage() {
     return () => unsubs.forEach((u) => u());
   }, []);
 
+  const openEpisode = (item: AgentItem, ep: number) => {
+    if (!user) { navigate("/login"); return; }
+    if (!canWatch) { navigate(`/subscribe?plan=${agentPlan?.id || "agent"}&direct=1`); return; }
+    navigate(`/play/${item.id}?type=series&ep=${ep}`);
+  };
+
+  const episodeList = (item: AgentItem) => {
+    const raw = item.episodes;
+    const arr: any[] = Array.isArray(raw) ? raw : raw && typeof raw === "object" ? Object.values(raw) : [];
+    return arr
+      .filter(Boolean)
+      .map((e: any, i: number) => ({
+        number: Number(e?.episodeNumber ?? i + 1),
+        title: e?.title || `Episode ${i + 1}`,
+        season: Number(e?.season || 1),
+        image: e?.image || item.image,
+      }))
+      .sort((a, b) => a.season - b.season || a.number - b.number);
+  };
+
   const open = (item: AgentItem) => {
     if (!user) {
       navigate("/login");
